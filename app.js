@@ -91,8 +91,6 @@ window.appAuth = {
             const userDoc = snap.docs[0];
             let userData = userDoc.data();
 
-            // --- AUTO ADMIN RECOVERY ---
-            // If it detects the admin email, it automatically upgrades the account!
             if (userData.email === 'shaolindown3252@gmail.com' && userData.role !== 'admin') {
                 await updateDoc(doc(db, "users", userDoc.id), { role: 'admin', verified: true });
                 userData.role = 'admin';
@@ -116,7 +114,6 @@ window.appAuth = {
         const checkSnap = await getDocs(check);
         if(!checkSnap.empty) return ui.showToast('Email already in use', 'error');
 
-        // Automatically assign admin if it matches your email during registration
         const isAppAdmin = email === 'shaolindown3252@gmail.com';
 
         await addDoc(collection(db, "users"), {
@@ -153,7 +150,7 @@ window.appFeatures = {
         await addDoc(collection(db, "posts"), {
             authorId: currentUser.id, authorName: currentUser.username, authorPic: currentUser.pic || "",
             authorVerified: currentUser.verified || false, text: text, category: cat,
-            status: currentUser.role === 'admin' ? 'approved' : 'pending', // Admin posts go live instantly
+            status: currentUser.role === 'admin' ? 'approved' : 'pending',
             timestamp: Date.now(), likes: [], comments: []
         });
         
@@ -207,11 +204,10 @@ window.appFeatures = {
         html += `</div>`;
         return html;
     },
+
+    // Bypassing Firebase Index errors by fetching ordered and filtering in JavaScript
     renderFeed: () => {
-        let q = query(collection(db, "posts"), where("status", "==", "approved"), orderBy("timestamp", "desc"));
-        if(currentFeedCategory !== 'All') {
-            q = query(collection(db, "posts"), where("status", "==", "approved"), where("category", "==", currentFeedCategory), orderBy("timestamp", "desc"));
-        }
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         
         onSnapshot(q, (snap) => {
             const container = document.getElementById('feed-container');
@@ -219,16 +215,23 @@ window.appFeatures = {
             
             if(currentFeedCategory === 'All') appFeatures.renderAnnouncementsToFeed(container);
 
-            if (snap.empty) {
-                container.innerHTML += '<p style="text-align:center; color:var(--text-muted)">No posts found in this category.</p>';
-                return;
-            }
+            let hasPosts = false;
             snap.forEach(docSnap => {
                 const post = { id: docSnap.id, ...docSnap.data() };
-                container.innerHTML += appFeatures.createPostHTML(post);
+                if(post.status === 'approved') {
+                    if(currentFeedCategory === 'All' || post.category === currentFeedCategory) {
+                        container.innerHTML += appFeatures.createPostHTML(post);
+                        hasPosts = true;
+                    }
+                }
             });
+            
+            if (!hasPosts) {
+                container.innerHTML += '<p style="text-align:center; color:var(--text-muted)">No posts found in this category.</p>';
+            }
         });
     },
+
     renderAnnouncementsToFeed: async (container) => {
         const q = query(collection(db, "announcements"));
         const snap = await getDocs(q);
@@ -363,10 +366,19 @@ window.appFeatures = {
 
         const c = document.getElementById('other-profile-posts');
         c.innerHTML = 'Loading posts...';
-        const q = query(collection(db, "posts"), where("authorId", "==", userId), where("status", "==", "approved"), orderBy("timestamp", "desc"));
+        
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
-        c.innerHTML = snap.empty ? '<p style="text-align:center; color:var(--text-muted)">No posts found.</p>' : '';
-        snap.forEach(docSnap => { c.innerHTML += appFeatures.createPostHTML({ id: docSnap.id, ...docSnap.data() }); });
+        c.innerHTML = '';
+        let found = false;
+        snap.forEach(docSnap => {
+            const p = { id: docSnap.id, ...docSnap.data() };
+            if(p.authorId === userId && p.status === 'approved') {
+                c.innerHTML += appFeatures.createPostHTML(p);
+                found = true;
+            }
+        });
+        if(!found) c.innerHTML = '<p style="text-align:center; color:var(--text-muted)">No posts found.</p>';
 
         router.navigate('other-profile');
     },
@@ -408,7 +420,6 @@ window.appFeatures = {
         appFeatures.renderProfile();
     },
 
-    // --- PICTURE UPLOADER (WITH COMPRESSION FIX) ---
     updateProfilePic: (e) => {
         const file = e.target.files[0]; if (!file) return;
         ui.showToast('Compressing and uploading image...', 'info');
@@ -417,18 +428,15 @@ window.appFeatures = {
         reader.onload = (event) => {
             const img = new Image();
             img.onload = async () => {
-                // Compress Image so Firebase accepts it
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400; // Resize width
+                const MAX_WIDTH = 400;
                 const scaleSize = MAX_WIDTH / img.width;
                 canvas.width = MAX_WIDTH;
                 canvas.height = img.height * scaleSize;
                 
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Convert to compressed Base64 string
-                const base64Compressed = canvas.toDataURL('image/jpeg', 0.6); // 60% quality
+                const base64Compressed = canvas.toDataURL('image/jpeg', 0.6);
 
                 try {
                     await updateDoc(doc(db, "users", currentUser.id), { pic: base64Compressed });
@@ -452,33 +460,27 @@ window.appFeatures = {
         const c = document.getElementById('profile-posts-container'); 
         c.innerHTML = 'Loading...';
         
-        let snap;
-        if (type === 'own') {
-            const q = query(collection(db, "posts"), where("authorId", "==", currentUser.id), orderBy("timestamp", "desc"));
-            snap = await getDocs(q);
-        } else if (type === 'liked') {
-            const q = query(collection(db, "posts"), where("likes", "array-contains", currentUser.id));
-            snap = await getDocs(q);
-        } else if (type === 'saved') {
-            if(!currentUser.saved || currentUser.saved.length === 0) {
-                return c.innerHTML = '<p style="text-align:center;">No saved posts.</p>';
-            }
-            const q = query(collection(db, "posts"));
-            const allSnap = await getDocs(q);
-            c.innerHTML = '';
-            let found = false;
-            allSnap.forEach(docSnap => {
-                if(currentUser.saved.includes(docSnap.id)) {
-                    c.innerHTML += appFeatures.createPostHTML({ id: docSnap.id, ...docSnap.data() });
-                    found = true;
-                }
-            });
-            if(!found) c.innerHTML = '<p style="text-align:center;">No saved posts found.</p>';
-            return;
-        }
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+        const snap = await getDocs(q);
+        
+        c.innerHTML = '';
+        let found = false;
 
-        c.innerHTML = snap.empty ? `<p style="text-align:center; margin-top:20px; color:var(--text-muted)">No posts found.</p>` : '';
-        snap.forEach(docSnap => { c.innerHTML += appFeatures.createPostHTML({ id: docSnap.id, ...docSnap.data() }); });
+        snap.forEach(docSnap => {
+            const post = { id: docSnap.id, ...docSnap.data() };
+            let shouldShow = false;
+
+            if (type === 'own' && post.authorId === currentUser.id) shouldShow = true;
+            if (type === 'liked' && post.likes && post.likes.includes(currentUser.id)) shouldShow = true;
+            if (type === 'saved' && currentUser.saved && currentUser.saved.includes(post.id)) shouldShow = true;
+
+            if (shouldShow) {
+                c.innerHTML += appFeatures.createPostHTML(post);
+                found = true;
+            }
+        });
+
+        if (!found) c.innerHTML = `<p style="text-align:center; margin-top:20px; color:var(--text-muted)">No posts found.</p>`;
     },
 
     // --- SEARCH ---
@@ -527,19 +529,26 @@ window.appFeatures = {
         });
     },
     renderNotifications: () => {
-        const q = query(collection(db, "notifications"), where("to", "==", currentUser.id), orderBy("time", "desc"));
+        const q = query(collection(db, "notifications"), orderBy("time", "desc"));
         onSnapshot(q, (snap) => {
             const c = document.getElementById('notify-container');
-            c.innerHTML = snap.empty ? '<p>No notifications yet.</p>' : '';
+            c.innerHTML = '';
+            let found = false;
+            let unread = 0;
+            
             snap.forEach(docSnap => {
                 const n = { id: docSnap.id, ...docSnap.data() };
-                const cursor = n.type !== 'none' ? 'cursor:pointer;' : '';
-                c.innerHTML += `<div class="card" style="padding:10px; opacity: ${n.read ? '0.7' : '1'}; ${cursor}" onclick="appFeatures.handleNotificationClick('${n.type}', '${n.linkId}', '${n.id}')">
-                    <p>${sanitize(n.text)}</p><small>${timeAgo(n.time)}</small>
-                </div>`;
+                if(n.to === currentUser.id) {
+                    found = true;
+                    if(!n.read) unread++;
+                    const cursor = n.type !== 'none' ? 'cursor:pointer;' : '';
+                    c.innerHTML += `<div class="card" style="padding:10px; opacity: ${n.read ? '0.7' : '1'}; ${cursor}" onclick="appFeatures.handleNotificationClick('${n.type}', '${n.linkId}', '${n.id}')">
+                        <p>${sanitize(n.text)}</p><small>${timeAgo(n.time)}</small>
+                    </div>`;
+                }
             });
-            // Update badge
-            const unread = snap.docs.filter(d => !d.data().read).length;
+            
+            if(!found) c.innerHTML = '<p>No notifications yet.</p>';
             const b = document.getElementById('notif-badge');
             if (unread > 0) { b.style.display = 'block'; b.innerText = unread; } else { b.style.display = 'none'; }
         });
@@ -572,26 +581,30 @@ window.appFeatures = {
     renderMyReports: async () => {
         const list = document.getElementById('my-reports-list');
         list.innerHTML = 'Loading...';
-        const q = query(collection(db, "reports"), where("uId", "==", currentUser.id), orderBy("time", "desc"));
+        const q = query(collection(db, "reports"), orderBy("time", "desc"));
         const snap = await getDocs(q);
         
-        if(snap.empty) list.innerHTML = '<p style="text-align:center;">No bug reports yet.</p>';
-        else list.innerHTML = '';
+        list.innerHTML = '';
+        let found = false;
         
         snap.forEach(docSnap => {
             const r = docSnap.data();
-            const replyBlock = r.adminReply ? 
-                `<div style="margin-top:10px; padding:12px; background:var(--secondary); color:#ffffff; border-radius:8px; font-size:0.95rem; font-weight:bold;">
-                    👨‍💻 Admin Reply:<br><span style="font-weight:normal; font-size:0.9rem;">${sanitize(r.adminReply)}</span>
-                </div>` : 
-                `<div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);">Status: Pending Admin Review</div>`;
-                
-            list.innerHTML += `<div class="card">
-                <small>${timeAgo(r.time)}</small>
-                <p class="mt-1">${sanitize(r.text)}</p>
-                ${replyBlock}
-            </div>`;
+            if(r.uId === currentUser.id) {
+                found = true;
+                const replyBlock = r.adminReply ? 
+                    `<div style="margin-top:10px; padding:12px; background:var(--secondary); color:#ffffff; border-radius:8px; font-size:0.95rem; font-weight:bold; box-shadow: 0 4px 8px rgba(0,132,255,0.3);">
+                        👨‍💻 Admin Reply:<br><span style="font-weight:normal; font-size:0.9rem;">${sanitize(r.adminReply)}</span>
+                    </div>` : 
+                    `<div style="margin-top:10px; font-size:0.8rem; color:var(--text-muted);">Status: Pending Admin Review</div>`;
+                    
+                list.innerHTML += `<div class="card">
+                    <small>${timeAgo(r.time)}</small>
+                    <p class="mt-1">${sanitize(r.text)}</p>
+                    ${replyBlock}
+                </div>`;
+            }
         });
+        if(!found) list.innerHTML = '<p style="text-align:center;">You have not reported any bugs yet.</p>';
         router.navigate('my-reports');
     },
     submitAppeal: async () => {
@@ -617,11 +630,19 @@ window.appAdmin = {
     renderPending: async () => {
         const area = document.getElementById('admin-content-area');
         area.innerHTML = 'Loading...';
-        const q = query(collection(db, "posts"), where("status", "==", "pending"));
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
-        if (snap.empty) { area.innerHTML = '<p>No pending posts.</p>'; return; }
+        
         area.innerHTML = '<h4>Pending Approval Queue</h4>';
-        snap.forEach(docSnap => { area.innerHTML += appFeatures.createPostHTML({ id: docSnap.id, ...docSnap.data() }, 'admin_queue'); });
+        let found = false;
+        snap.forEach(docSnap => { 
+            const p = { id: docSnap.id, ...docSnap.data() };
+            if(p.status === 'pending') {
+                area.innerHTML += appFeatures.createPostHTML(p, 'admin_queue'); 
+                found = true;
+            }
+        });
+        if (!found) area.innerHTML += '<p>No pending posts.</p>';
     },
     moderatePost: async (postId, status) => {
         await updateDoc(doc(db, "posts", postId), { status: status });
