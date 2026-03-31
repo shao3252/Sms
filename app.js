@@ -18,11 +18,67 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- 2. GLOBAL STATE ---
+// --- 2. GLOBAL STATE & TRANSLATIONS ---
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
 let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
+
+// Kamusi ya Lugha (Dictionary)
+const translations = {
+    sw: {
+        welcomeSub: "Shiriki meseji tamu za mapenzi",
+        loginHeader: "Ingia",
+        regHeader: "Jisajili",
+        loginBtn: "Ingia",
+        regBtn: "Jisajili",
+        noAccount: "Hauna akaunti?",
+        haveAccount: "Tayari una akaunti?",
+        navHome: "Nyumbani",
+        navSearch: "Tafuta",
+        navAlerts: "Taarifa",
+        navProfile: "Wasifu",
+        draftTitle: "Andika Meseji",
+        sendApprovalBtn: "Tuma Ikaguliwe",
+        followingText: "Unaowafuata",
+        followersText: "Wanaokufuata",
+        editProfileBtn: "Badili Wasifu",
+        myPostsTab: "Posti Zangu",
+        likedTab: "Zilizopendwa",
+        savedTab: "Zilizohifadhiwa",
+        settingsTitle: "Mipangilio",
+        reportBugBtn: "🐞 Ripoti Tatizo",
+        myReportsBtn: "📋 Ripoti Zangu",
+        logoutBtn: "🚪 Toka",
+        closeBtn: "Funga"
+    },
+    en: {
+        welcomeSub: "Share the sweetest love texts",
+        loginHeader: "Login",
+        regHeader: "Register",
+        loginBtn: "Login",
+        regBtn: "Register",
+        noAccount: "Don't have an account?",
+        haveAccount: "Already have an account?",
+        navHome: "Home",
+        navSearch: "Search",
+        navAlerts: "Alerts",
+        navProfile: "Profile",
+        draftTitle: "Draft a Love Text",
+        sendApprovalBtn: "Send for Approval",
+        followingText: "Following",
+        followersText: "Followers",
+        editProfileBtn: "Edit Profile",
+        myPostsTab: "My Posts",
+        likedTab: "Liked",
+        savedTab: "Saved",
+        settingsTitle: "Settings",
+        reportBugBtn: "🐞 Report a Bug",
+        myReportsBtn: "📋 My Bug Reports",
+        logoutBtn: "🚪 Logout",
+        closeBtn: "Close"
+    }
+};
 
 // --- 3. UTILITIES ---
 const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
@@ -136,6 +192,22 @@ window.appAuth = {
 
 // --- 6. CORE FEATURES ---
 window.appFeatures = {
+    // Lugha System
+    changeLang: (langCode) => {
+        localStorage.setItem('st_lang', langCode);
+        
+        // Sync Dropdowns
+        if(document.getElementById('auth-lang')) document.getElementById('auth-lang').value = langCode;
+        if(document.getElementById('settings-lang')) document.getElementById('settings-lang').value = langCode;
+
+        // Apply translations
+        const dict = translations[langCode] || translations['sw'];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if(dict[key]) el.innerText = dict[key];
+        });
+    },
+
     getUser: async (userId) => {
         const docSnap = await getDoc(doc(db, "users", userId));
         if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
@@ -151,7 +223,7 @@ window.appFeatures = {
             authorId: currentUser.id, authorName: currentUser.username, authorPic: currentUser.pic || "",
             authorVerified: currentUser.verified || false, text: text, category: cat,
             status: currentUser.role === 'admin' ? 'approved' : 'pending',
-            timestamp: Date.now(), likes: [], comments: [], fakeLikes: 0 // New field for admin fake likes
+            timestamp: Date.now(), likes: [], comments: [], fakeLikes: 0
         });
         
         ui.showToast(currentUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
@@ -186,7 +258,6 @@ window.appFeatures = {
                         <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.moderatePost('${post.id}', 'rejected')">Reject</button>
                      </div>`;
         } else {
-            // Include fake likes in the total like count
             const likeCount = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0);
             const commentCount = post.comments ? post.comments.length : 0;
             html += `
@@ -197,7 +268,6 @@ window.appFeatures = {
                 <button class="action-btn" onclick="appFeatures.shareWhatsApp('${post.text}')">Share</button>
             </div>`;
             
-            // New Admin +Likes button added here
             if (isOwner || isAdmin) {
                 let extraAdminBtn = isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px; font-weight:bold;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">+ Likes</button>` : '';
                 
@@ -624,7 +694,6 @@ window.appFeatures = {
 
 // --- 7. ADMIN SYSTEM ---
 window.appAdmin = {
-    // --- NEW: Add Fake Likes Function ---
     addFakeLikes: async (postId, currentFake) => {
         const amount = prompt("Enter number of likes to add:", "100");
         if(amount === null || isNaN(amount) || amount === "") return;
@@ -632,7 +701,6 @@ window.appAdmin = {
         await updateDoc(doc(db, "posts", postId), { fakeLikes: currentFake + parseInt(amount) });
         ui.showToast(`Added ${amount} likes`, 'success');
         
-        // Refresh the current view to show new likes
         if(document.getElementById('view-home').classList.contains('active')) appFeatures.renderFeed();
         if(document.getElementById('view-single-post').classList.contains('active')) {
             const postSnap = await getDoc(doc(db, "posts", postId));
@@ -845,6 +913,10 @@ window.appAdmin = {
 
 // --- 8. START APP ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Start Language System
+    const savedLang = localStorage.getItem('st_lang') || 'sw';
+    appFeatures.changeLang(savedLang);
+
     if(currentUser) {
         document.getElementById('auth-screen').classList.remove('active');
         document.getElementById('main-screen').classList.add('active');
