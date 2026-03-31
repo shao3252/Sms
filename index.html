@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sms Tamu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+    <div id="toast-container"></div>
+
+    <div id="auth-screen" class="screen active">
+        <div class="auth-container">
+            <h1 class="logo-text">Sms Tamu 💖</h1>
+            <p class="subtitle">Share the sweetest love texts</p>
+            
+            <div id="login-form" class="auth-box">
+                <h2>Login</h2>
+                <input type="email" id="login-email" placeholder="Email">
+                <input type="password" id="login-pass" placeholder="Password">
+                <button onclick="appAuth.login()" class="btn-primary">Login</button>
+                <p>Don't have an account? <span onclick="appAuth.toggleAuth()" class="link">Register</span></p>
+            </div>
+
+            <div id="register-form" class="auth-box" style="display: none;">
+                <h2>Register</h2>
+                <input type="text" id="reg-user" placeholder="Username">
+                <input type="email" id="reg-email" placeholder="Email">
+                <input type="password" id="reg-pass" placeholder="Password">
+                <button onclick="appAuth.register()" class="btn-primary">Register</button>
+                <p>Already have an account? <span onclick="appAuth.toggleAuth()" class="link">Login</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-screen" class="screen">
+        <header class="app-header">
+            <h2 class="logo-text-small">Sms Tamu</h2>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="ui.toggleTheme()">🌓</button>
+                <button class="icon-btn" id="admin-btn" style="display:none;" onclick="router.navigate('admin')">🛡️</button>
+                <button class="icon-btn" onclick="appFeatures.openSettings()">⚙️</button>
+            </div>
+        </header>
+
+        <div class="content-area">
+            <div id="view-home" class="view active">
+                <div class="category-scroll" id="feed-categories">
+                    <button class="cat-pill active" onclick="appFeatures.filterFeed('All')">All</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Apology messages')">Apologies</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Messages of praise')">Praise</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Seductive Messages')">Seductive</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Other')">Other</button>
+                </div>
+                <div id="feed-container"></div>
+            </div>
+
+            <div id="view-search" class="view">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="Search posts or @users..." oninput="appFeatures.search()">
+                </div>
+                <div id="search-results"></div>
+            </div>
+
+            <div id="view-create" class="view">
+                <div class="create-box card">
+                    <h3>Draft a Love Text</h3>
+                    <select id="post-category" class="custom-select">
+                        <option value="" disabled selected>Select a Category...</option>
+                        <option value="Apology messages">Apology messages</option>
+                        <option value="Messages of praise">Messages of praise</option>
+                        <option value="Seductive Messages">Seductive Messages</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <textarea id="post-text" placeholder="Write something sweet..."></textarea>
+                    <button class="btn-primary" onclick="appFeatures.createPost()">Send for Approval</button>
+                </div>
+            </div>
+
+            <div id="view-notify" class="view">
+                <h3>Notifications</h3>
+                <div id="notify-container"></div>
+            </div>
+
+            <div id="view-single-post" class="view">
+                <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('notify')">🔙 Back</button>
+                <div id="single-post-container"></div>
+            </div>
+
+            <div id="view-profile" class="view">
+                <div class="profile-header card">
+                    <div class="prof-img-wrapper" onclick="document.getElementById('prof-pic-upload').click()">
+                        <img id="my-prof-pic" src="" alt="Profile">
+                        <div class="edit-pic-overlay">📷</div>
+                    </div>
+                    <input type="file" id="prof-pic-upload" accept="image/*" style="display:none" onchange="appFeatures.updateProfilePic(event)">
+                    <h2><span id="my-username">User</span> <span id="my-verified"></span></h2>
+                    <p id="my-bio">No bio yet.</p>
+                    
+                    <div class="profile-stats">
+                        <div><strong id="my-following">0</strong><br><small>Following</small></div>
+                        <div><strong id="my-followers">0</strong><br><small>Followers</small></div>
+                    </div>
+                    <button class="btn-outline mt-1" onclick="ui.showModal('edit-profile-modal')">Edit Profile</button>
+                </div>
+                <div class="profile-tabs">
+                    <button class="tab active" onclick="appFeatures.loadProfilePosts('own')">My Posts</button>
+                    <button class="tab" onclick="appFeatures.loadProfilePosts('liked')">Liked</button>
+                    <button class="tab" onclick="appFeatures.loadProfilePosts('saved')">Saved</button>
+                </div>
+                <div id="profile-posts-container"></div>
+            </div>
+
+            <div id="view-other-profile" class="view">
+                <div class="profile-header card">
+                    <button class="btn-outline" style="position:absolute; top:15px; left:15px; padding:5px 10px;" onclick="router.navigate('home')">🔙</button>
+                    <div class="prof-img-wrapper" style="margin-top:20px;">
+                        <img id="other-prof-pic" src="" alt="Profile">
+                    </div>
+                    <h2><span id="other-username"></span> <span id="other-verified"></span></h2>
+                    <p id="other-bio"></p>
+                    <div class="profile-stats">
+                        <div><strong id="other-following">0</strong><br><small>Following</small></div>
+                        <div><strong id="other-followers">0</strong><br><small>Followers</small></div>
+                    </div>
+                    <div class="mt-1">
+                        <button id="follow-btn" class="btn-primary" onclick="appFeatures.toggleFollow()">Follow</button>
+                    </div>
+                </div>
+                <h3 style="text-align:center; margin-bottom:10px;">Posts</h3>
+                <div id="other-profile-posts"></div>
+            </div>
+
+            <div id="view-my-reports" class="view">
+                <div class="profile-header card">
+                    <button class="btn-outline" style="position:absolute; top:15px; left:15px; padding:5px 10px;" onclick="router.navigate('profile')">🔙</button>
+                    <h2 style="margin-top:20px;">My Bug Reports</h2>
+                    <p style="font-size:0.9rem; color:var(--text-muted);">See admin replies to your issues</p>
+                </div>
+                <div id="my-reports-list"></div>
+            </div>
+
+            <div id="view-admin" class="view">
+                <h3>Admin Dashboard</h3>
+                <div class="admin-grid">
+                    <button class="btn-outline" onclick="appAdmin.renderPending()">Pending Queue</button>
+                    <button class="btn-outline" onclick="appAdmin.renderUsers()">Manage Users</button>
+                    <button class="btn-outline" onclick="appAdmin.renderAnnouncements()">Announcements</button>
+                    <button class="btn-outline" onclick="appAdmin.renderReports()">Bug Reports</button>
+                    <button class="btn-outline" onclick="appAdmin.renderAppeals()" style="grid-column: span 2; border-color:var(--primary); color:var(--primary);">Block Appeals</button>
+                </div>
+                <div id="admin-content-area" class="card mt-1">Select an option above.</div>
+            </div>
+        </div>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="router.navigate('home')">🏠<span>Home</span></button>
+            <button class="nav-item" onclick="router.navigate('search')">🔍<span>Search</span></button>
+            <button class="nav-item create-btn" onclick="router.navigate('create')"><div class="plus-icon">+</div></button>
+            <button class="nav-item" onclick="router.navigate('notify')">🔔<span class="badge" id="notif-badge" style="display:none"></span><span>Alerts</span></button>
+            <button class="nav-item" onclick="router.navigate('profile')">👤<span>Profile</span></button>
+        </nav>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content card" style="text-align:center;">
+            <h3>Settings</h3>
+            <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); ui.showModal('bug-modal');">🐞 Report a Bug</button>
+            <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); appFeatures.renderMyReports();">📋 My Bug Reports</button>
+            <button id="btn-appeal" class="btn-outline mt-1" style="width:100%; display:none; background:#fff3cd; color:#856404; border-color:#856404;" onclick="ui.hideModal('settings-modal'); ui.showModal('appeal-modal');">⚖️ Request Account Review</button>
+            <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+            <button class="btn-outline" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="ui.hideModal('settings-modal'); appAuth.logout();">🚪 Logout</button>
+            <button class="btn-outline mt-1" style="width:100%; border:none;" onclick="ui.hideModal('settings-modal')">Close</button>
+        </div>
+    </div>
+
+    <div id="appeal-modal" class="modal">
+        <div class="modal-content card">
+            <h3>Request Review</h3>
+            <p style="font-size:0.9rem; color:var(--danger); margin-bottom:10px;">Your account is blocked. Write to the Admin to request unblocking.</p>
+            <textarea id="appeal-text" placeholder="Write your appeal here..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="ui.hideModal('appeal-modal')">Cancel</button>
+                <button class="btn-primary" onclick="appFeatures.submitAppeal()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bug-modal" class="modal">
+        <div class="modal-content card">
+            <h3>Report a Bug / Feedback</h3>
+            <textarea id="bug-text" placeholder="Describe the issue..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="ui.hideModal('bug-modal')">Cancel</button>
+                <button class="btn-primary" onclick="appFeatures.submitReport()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content card">
+            <h3>Edit Profile</h3>
+            <input type="text" id="edit-user" placeholder="Username">
+            <textarea id="edit-bio" placeholder="Bio"></textarea>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="ui.hideModal('edit-profile-modal')">Cancel</button>
+                <button class="btn-primary" onclick="appFeatures.saveProfile()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="comment-modal" class="modal">
+        <div class="modal-content card">
+            <h3>Comments</h3>
+            <div id="comments-list"></div>
+            <div class="comment-input-area">
+                <input type="text" id="comment-input" placeholder="Write a comment...">
+                <button class="btn-primary" onclick="appFeatures.addComment()">Post</button>
+            </div>
+            <button class="btn-outline mt-1" onclick="ui.hideModal('comment-modal')">Close</button>
+        </div>
+    </div>
+
+    <div id="announcement-modal" class="modal">
+        <div class="modal-content card">
+            <h3>New Announcement</h3>
+            <textarea id="announcement-text" placeholder="Write global announcement..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-outline" onclick="ui.hideModal('announcement-modal')">Cancel</button>
+                <button class="btn-primary" onclick="appAdmin.postAnnouncement()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
