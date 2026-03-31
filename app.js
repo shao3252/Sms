@@ -89,7 +89,17 @@ window.appAuth = {
         
         if (!snap.empty) {
             const userDoc = snap.docs[0];
-            currentUser = { id: userDoc.id, ...userDoc.data() };
+            let userData = userDoc.data();
+
+            // --- AUTO ADMIN RECOVERY ---
+            // If it detects the admin email, it automatically upgrades the account!
+            if (userData.email === 'shaolindown3252@gmail.com' && userData.role !== 'admin') {
+                await updateDoc(doc(db, "users", userDoc.id), { role: 'admin', verified: true });
+                userData.role = 'admin';
+                userData.verified = true;
+            }
+
+            currentUser = { id: userDoc.id, ...userData };
             localStorage.setItem('st_session', JSON.stringify(currentUser));
             location.reload();
         } else { 
@@ -106,8 +116,13 @@ window.appAuth = {
         const checkSnap = await getDocs(check);
         if(!checkSnap.empty) return ui.showToast('Email already in use', 'error');
 
+        // Automatically assign admin if it matches your email during registration
+        const isAppAdmin = email === 'shaolindown3252@gmail.com';
+
         await addDoc(collection(db, "users"), {
-            username: user, email: email, password: pass, role: "user", verified: false,
+            username: user, email: email, password: pass, 
+            role: isAppAdmin ? "admin" : "user", 
+            verified: isAppAdmin,
             isBlocked: false, followers: [], following: [], bio: "", pic: "", fakeFollowers: 0
         });
         ui.showToast('Success! Now Login', 'success');
@@ -138,9 +153,11 @@ window.appFeatures = {
         await addDoc(collection(db, "posts"), {
             authorId: currentUser.id, authorName: currentUser.username, authorPic: currentUser.pic || "",
             authorVerified: currentUser.verified || false, text: text, category: cat,
-            status: "pending", timestamp: Date.now(), likes: [], comments: []
+            status: currentUser.role === 'admin' ? 'approved' : 'pending', // Admin posts go live instantly
+            timestamp: Date.now(), likes: [], comments: []
         });
-        ui.showToast('Sent for Admin Review!', 'success');
+        
+        ui.showToast(currentUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
         document.getElementById('post-text').value = '';
         router.navigate('home');
     },
@@ -264,7 +281,6 @@ window.appFeatures = {
             ui.showToast('Post saved', 'success');
         }
         localStorage.setItem('st_session', JSON.stringify(currentUser));
-        // Force re-render of feed to update button color
         appFeatures.renderFeed();
     },
     deletePost: async (postId) => {
@@ -391,19 +407,44 @@ window.appFeatures = {
         ui.showToast('Profile updated', 'success');
         appFeatures.renderProfile();
     },
+
+    // --- PICTURE UPLOADER (WITH COMPRESSION FIX) ---
     updateProfilePic: (e) => {
         const file = e.target.files[0]; if (!file) return;
+        ui.showToast('Compressing and uploading image...', 'info');
+        
         const reader = new FileReader();
-        reader.onload = async (event) => {
-            const base64 = event.target.result;
-            await updateDoc(doc(db, "users", currentUser.id), { pic: base64 });
-            currentUser.pic = base64;
-            localStorage.setItem('st_session', JSON.stringify(currentUser));
-            appFeatures.renderProfile(); 
-            ui.showToast('Profile photo updated', 'success');
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = async () => {
+                // Compress Image so Firebase accepts it
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 400; // Resize width
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Convert to compressed Base64 string
+                const base64Compressed = canvas.toDataURL('image/jpeg', 0.6); // 60% quality
+
+                try {
+                    await updateDoc(doc(db, "users", currentUser.id), { pic: base64Compressed });
+                    currentUser.pic = base64Compressed;
+                    localStorage.setItem('st_session', JSON.stringify(currentUser));
+                    appFeatures.renderProfile(); 
+                    ui.showToast('Profile photo updated successfully!', 'success');
+                } catch(error) {
+                    ui.showToast('Failed to upload image.', 'error');
+                }
+            };
+            img.src = event.target.result;
         };
         reader.readAsDataURL(file);
     },
+
     loadProfilePosts: async (type) => {
         document.querySelectorAll('.profile-tabs .tab').forEach(t => t.classList.remove('active'));
         if(event && event.target) event.target.classList.add('active');
@@ -419,7 +460,6 @@ window.appFeatures = {
             const q = query(collection(db, "posts"), where("likes", "array-contains", currentUser.id));
             snap = await getDocs(q);
         } else if (type === 'saved') {
-            // Firestore doesn't support 'where IN' with large arrays easily, so we fetch all and filter client side for saved
             if(!currentUser.saved || currentUser.saved.length === 0) {
                 return c.innerHTML = '<p style="text-align:center;">No saved posts.</p>';
             }
@@ -450,7 +490,6 @@ window.appFeatures = {
         res.innerHTML = 'Searching...';
         let html = '';
         
-        // Fetch all users and posts (Basic implementation for simple DB)
         const usersSnap = await getDocs(collection(db, "users"));
         html += '<h4>Users</h4>';
         let userFound = false;
@@ -751,7 +790,6 @@ window.appAdmin = {
         if(!text) return ui.showToast("Cannot be empty", "error");
         await addDoc(collection(db, "announcements"), { text: text, time: Date.now() });
         
-        // Notify all users (Basic implementation)
         const usersSnap = await getDocs(collection(db, "users"));
         usersSnap.forEach(u => appFeatures.notify(u.id, "New Admin Announcement."));
         
@@ -770,7 +808,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(currentUser.role === 'admin') document.getElementById('admin-btn').style.display = 'block';
         appFeatures.renderFeed();
         
-        // Check real-time blocked status
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
             if(docSnap.exists() && docSnap.data().isBlocked !== currentUser.isBlocked) {
                 currentUser.isBlocked = docSnap.data().isBlocked;
