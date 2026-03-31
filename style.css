@@ -1,4 +1,4 @@
- :root {
+:root {
     --bg-color: #f0f2f5;
     --card-bg: #ffffff;
     --text-main: #1c1e21;
@@ -36,6 +36,10 @@ body { background: var(--bg-color); color: var(--text-main); transition: backgro
 .logo-text { font-size: 2.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; text-align: center; }
 .logo-text-small { font-size: 1.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
 
+/* Language Switcher */
+.lang-switcher-auth { position: absolute; top: 20px; right: 20px; background: var(--card-bg); padding: 5px 10px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.lang-switcher-auth select { border: none; background: transparent; color: var(--text-main); outline: none; font-weight: bold; font-size: 0.9rem; }
+
 /* Verified Badge */
 .verified-badge { display: inline-flex; align-items: center; justify-content: center; background: #1da1f2; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; margin-left: 5px; vertical-align: middle; font-weight: bold; }
 
@@ -56,7 +60,7 @@ body { background: var(--bg-color); color: var(--text-main); transition: backgro
 @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* Auth */
-.auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; }
+.auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; text-align: center; position: relative; }
 .auth-box { width: 100%; max-width: 400px; background: var(--card-bg); padding: 30px 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-top: 20px; }
 input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-color); color: var(--text-main); outline: none; transition: border 0.3s; }
 input:focus, textarea:focus, .custom-select:focus { border-color: var(--primary); }
