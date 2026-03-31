@@ -151,7 +151,7 @@ window.appFeatures = {
             authorId: currentUser.id, authorName: currentUser.username, authorPic: currentUser.pic || "",
             authorVerified: currentUser.verified || false, text: text, category: cat,
             status: currentUser.role === 'admin' ? 'approved' : 'pending',
-            timestamp: Date.now(), likes: [], comments: []
+            timestamp: Date.now(), likes: [], comments: [], fakeLikes: 0 // New field for admin fake likes
         });
         
         ui.showToast(currentUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
@@ -186,7 +186,8 @@ window.appFeatures = {
                         <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.moderatePost('${post.id}', 'rejected')">Reject</button>
                      </div>`;
         } else {
-            const likeCount = post.likes ? post.likes.length : 0;
+            // Include fake likes in the total like count
+            const likeCount = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0);
             const commentCount = post.comments ? post.comments.length : 0;
             html += `
             <div class="post-actions">
@@ -195,8 +196,13 @@ window.appFeatures = {
                 <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾</button>
                 <button class="action-btn" onclick="appFeatures.shareWhatsApp('${post.text}')">Share</button>
             </div>`;
+            
+            // New Admin +Likes button added here
             if (isOwner || isAdmin) {
+                let extraAdminBtn = isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px; font-weight:bold;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">+ Likes</button>` : '';
+                
                 html += `<div class="mt-1" style="text-align:right;">
+                    ${extraAdminBtn}
                     <button class="action-btn" style="display:inline; color:var(--danger)" onclick="appFeatures.deletePost('${post.id}')">Delete Post</button>
                 </div>`;
             }
@@ -205,7 +211,6 @@ window.appFeatures = {
         return html;
     },
 
-    // Bypassing Firebase Index errors by fetching ordered and filtering in JavaScript
     renderFeed: () => {
         const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         
@@ -619,6 +624,23 @@ window.appFeatures = {
 
 // --- 7. ADMIN SYSTEM ---
 window.appAdmin = {
+    // --- NEW: Add Fake Likes Function ---
+    addFakeLikes: async (postId, currentFake) => {
+        const amount = prompt("Enter number of likes to add:", "100");
+        if(amount === null || isNaN(amount) || amount === "") return;
+        
+        await updateDoc(doc(db, "posts", postId), { fakeLikes: currentFake + parseInt(amount) });
+        ui.showToast(`Added ${amount} likes`, 'success');
+        
+        // Refresh the current view to show new likes
+        if(document.getElementById('view-home').classList.contains('active')) appFeatures.renderFeed();
+        if(document.getElementById('view-single-post').classList.contains('active')) {
+            const postSnap = await getDoc(doc(db, "posts", postId));
+            document.getElementById('single-post-container').innerHTML = appFeatures.createPostHTML({ id: postSnap.id, ...postSnap.data() });
+        }
+        if(document.getElementById('view-other-profile').classList.contains('active')) appFeatures.viewUserProfile(viewingUserId);
+    },
+    
     changeCategory: async (postId) => {
         const newCat = prompt(`Enter exactly one of: Apology messages, Messages of praise, Seductive Messages, Other`);
         if(newCat) {
