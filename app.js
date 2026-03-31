@@ -50,7 +50,8 @@ const translations = {
         myReportsBtn: "📋 Ripoti Zangu",
         logoutBtn: "🚪 Toka",
         closeBtn: "Funga",
-        // Dynamic Translations for JS
+        
+        // JS Dynamic & Categories
         pendingApproval: "Inasubiri Kukaguliwa",
         rejected: "Imekataliwa",
         approve: "Ruhusu",
@@ -65,7 +66,14 @@ const translations = {
         usersTitle: "Watumiaji",
         postsTitle: "Posti",
         noUsersFound: "Hakuna mtumiaji aliyepatikana.",
-        noPostsFound: "Hakuna posti zilizopatikana."
+        noPostsFound: "Hakuna posti zilizopatikana.",
+        
+        catAll: "Yote",
+        catSelect: "Chagua Kundi...",
+        catApology: "Kuomba Msamaha",
+        catPraise: "Kusifia",
+        catSeductive: "Kuvutia",
+        catOther: "Mengineyo"
     },
     en: {
         welcomeSub: "Share the sweetest love texts",
@@ -92,7 +100,8 @@ const translations = {
         myReportsBtn: "📋 My Bug Reports",
         logoutBtn: "🚪 Logout",
         closeBtn: "Close",
-        // Dynamic Translations for JS
+        
+        // JS Dynamic & Categories
         pendingApproval: "Pending Approval",
         rejected: "Rejected",
         approve: "Approve",
@@ -107,14 +116,32 @@ const translations = {
         usersTitle: "Users",
         postsTitle: "Posts",
         noUsersFound: "No users found.",
-        noPostsFound: "No posts found."
+        noPostsFound: "No posts found.",
+        
+        catAll: "All",
+        catSelect: "Select a Category...",
+        catApology: "Apology messages",
+        catPraise: "Messages of praise",
+        catSeductive: "Seductive Messages",
+        catOther: "Other"
     }
 };
 
-// Translation Helper
 window.t = (key) => {
     const lang = localStorage.getItem('st_lang') || 'sw';
     return translations[lang][key] || key;
+};
+
+// Map DB category string to translation key
+const getCategoryTranslation = (dbCatString) => {
+    const map = {
+        'All': 'catAll',
+        'Apology messages': 'catApology',
+        'Messages of praise': 'catPraise',
+        'Seductive Messages': 'catSeductive',
+        'Other': 'catOther'
+    };
+    return t(map[dbCatString] || 'catOther');
 };
 
 // --- 3. UTILITIES ---
@@ -240,9 +267,9 @@ window.appFeatures = {
             if(dict[key]) el.innerText = dict[key];
         });
         
-        // Refresh feed to apply dynamic translations
-        if(currentUser && document.getElementById('view-home').classList.contains('active')) {
-            appFeatures.renderFeed();
+        if(currentUser) {
+            if(document.getElementById('view-home').classList.contains('active')) appFeatures.renderFeed();
+            if(document.getElementById('view-profile').classList.contains('active')) appFeatures.renderProfile();
         }
     },
 
@@ -266,6 +293,7 @@ window.appFeatures = {
         
         ui.showToast(currentUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
         document.getElementById('post-text').value = '';
+        document.getElementById('post-category').value = '';
         router.navigate('home');
     },
     createPostHTML: (post, context = 'feed') => {
@@ -278,13 +306,16 @@ window.appFeatures = {
         if (post.status === 'rejected') statusBadge = `<span class="post-status" style="background:#f8d7da; color:#721c24;">${t('rejected')}</span>`;
         let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">${t('editCat')}</span>` : '';
 
+        // Translate the database category string into user's language
+        const displayCat = getCategoryTranslation(post.category);
+
         let html = `
         <div class="card" id="post-${post.id}">
             <div class="post-header">
                 <img src="${post.authorPic || defaultAvatar}" class="avatar" alt="dp" onclick="appFeatures.viewUserProfile('${post.authorId}')">
                 <div class="post-meta">
                     <div class="post-author" onclick="appFeatures.viewUserProfile('${post.authorId}')">${sanitize(post.authorName)} ${getVerifiedIcon(post.authorVerified)}</div>
-                    <div class="post-time">${timeAgo(post.timestamp)} ${statusBadge} <span class="post-cat-badge">${post.category || 'Other'}</span> ${adminCatChanger}</div>
+                    <div class="post-time">${timeAgo(post.timestamp)} ${statusBadge} <span class="post-cat-badge">${displayCat}</span> ${adminCatChanger}</div>
                 </div>
             </div>
             <div class="post-text">${sanitize(post.text)}</div>
