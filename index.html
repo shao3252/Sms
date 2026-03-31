@@ -56,11 +56,11 @@
         <div class="content-area">
             <div id="view-home" class="view active">
                 <div class="category-scroll" id="feed-categories">
-                    <button class="cat-pill active" onclick="appFeatures.filterFeed('All')">All</button>
-                    <button class="cat-pill" onclick="appFeatures.filterFeed('Apology messages')">Apologies</button>
-                    <button class="cat-pill" onclick="appFeatures.filterFeed('Messages of praise')">Praise</button>
-                    <button class="cat-pill" onclick="appFeatures.filterFeed('Seductive Messages')">Seductive</button>
-                    <button class="cat-pill" onclick="appFeatures.filterFeed('Other')">Other</button>
+                    <button class="cat-pill active" onclick="appFeatures.filterFeed('All')" data-i18n="catAll">Yote</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Apology messages')" data-i18n="catApology">Kuomba Msamaha</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Messages of praise')" data-i18n="catPraise">Kusifia</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Seductive Messages')" data-i18n="catSeductive">Kuvutia</button>
+                    <button class="cat-pill" onclick="appFeatures.filterFeed('Other')" data-i18n="catOther">Mengineyo</button>
                 </div>
                 <div id="feed-container"></div>
             </div>
@@ -76,13 +76,13 @@
                 <div class="create-box card">
                     <h3 data-i18n="draftTitle">Andika Meseji</h3>
                     <select id="post-category" class="custom-select">
-                        <option value="" disabled selected>Chagua Category...</option>
-                        <option value="Apology messages">Apology messages</option>
-                        <option value="Messages of praise">Messages of praise</option>
-                        <option value="Seductive Messages">Seductive Messages</option>
-                        <option value="Other">Other</option>
+                        <option value="" disabled selected data-i18n="catSelect">Chagua Kundi...</option>
+                        <option value="Apology messages" data-i18n="catApology">Kuomba Msamaha</option>
+                        <option value="Messages of praise" data-i18n="catPraise">Kusifia</option>
+                        <option value="Seductive Messages" data-i18n="catSeductive">Kuvutia</option>
+                        <option value="Other" data-i18n="catOther">Mengineyo</option>
                     </select>
-                    <textarea id="post-text" placeholder="Write something sweet..."></textarea>
+                    <textarea id="post-text" placeholder="..."></textarea>
                     <button class="btn-primary" onclick="appFeatures.createPost()" data-i18n="sendApprovalBtn">Tuma Ikaguliwe</button>
                 </div>
             </div>
@@ -137,7 +137,7 @@
                         <button id="follow-btn" class="btn-primary" onclick="appFeatures.toggleFollow()">Follow</button>
                     </div>
                 </div>
-                <h3 style="text-align:center; margin-bottom:10px;">Posts</h3>
+                <h3 style="text-align:center; margin-bottom:10px;" data-i18n="postsTitle">Posts</h3>
                 <div id="other-profile-posts"></div>
             </div>
 
@@ -244,7 +244,7 @@
             <h3>New Announcement</h3>
             <textarea id="announcement-text" placeholder="Write global announcement..."></textarea>
             <div class="modal-actions">
-                <button class="btn-outline" onclick="ui.hideModal('announcement-modal')">Cancel</button>
+                <button class="btn-outline" onclick="ui.hideModal('announcement-modal')" data-i18n="closeBtn">Cancel</button>
                 <button class="btn-primary" onclick="appAdmin.postAnnouncement()">Send</button>
             </div>
         </div>
