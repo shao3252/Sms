@@ -132,7 +132,6 @@ window.t = (key) => {
     return translations[lang][key] || key;
 };
 
-// Map DB category string to translation key
 const getCategoryTranslation = (dbCatString) => {
     const map = {
         'All': 'catAll',
@@ -306,7 +305,6 @@ window.appFeatures = {
         if (post.status === 'rejected') statusBadge = `<span class="post-status" style="background:#f8d7da; color:#721c24;">${t('rejected')}</span>`;
         let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">${t('editCat')}</span>` : '';
 
-        // Translate the database category string into user's language
         const displayCat = getCategoryTranslation(post.category);
 
         let html = `
@@ -350,6 +348,7 @@ window.appFeatures = {
         return html;
     },
 
+    // Fixed Feed Filter Without Firebase Index Error
     renderFeed: () => {
         const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         
@@ -371,7 +370,7 @@ window.appFeatures = {
             });
             
             if (!hasPosts) {
-                container.innerHTML += `<p style="text-align:center; color:var(--text-muted)">${t('noPosts')}</p>`;
+                container.innerHTML += `<p style="text-align:center; color:var(--text-muted)">${t('noPostsFound')}</p>`;
             }
         });
     },
