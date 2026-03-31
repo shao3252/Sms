@@ -24,7 +24,6 @@ let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
 
-// Kamusi ya Lugha (Dictionary)
 const translations = {
     sw: {
         welcomeSub: "Shiriki meseji tamu za mapenzi",
@@ -50,7 +49,23 @@ const translations = {
         reportBugBtn: "🐞 Ripoti Tatizo",
         myReportsBtn: "📋 Ripoti Zangu",
         logoutBtn: "🚪 Toka",
-        closeBtn: "Funga"
+        closeBtn: "Funga",
+        // Dynamic Translations for JS
+        pendingApproval: "Inasubiri Kukaguliwa",
+        rejected: "Imekataliwa",
+        approve: "Ruhusu",
+        reject: "Kataa",
+        share: "Shiriki",
+        deletePost: "Futa Posti",
+        editCat: "✏️ Kundi",
+        addLikes: "+ Likes",
+        noPosts: "Hakuna posti kwenye kundi hili.",
+        loading: "Inaload...",
+        searching: "Inatafuta...",
+        usersTitle: "Watumiaji",
+        postsTitle: "Posti",
+        noUsersFound: "Hakuna mtumiaji aliyepatikana.",
+        noPostsFound: "Hakuna posti zilizopatikana."
     },
     en: {
         welcomeSub: "Share the sweetest love texts",
@@ -76,8 +91,30 @@ const translations = {
         reportBugBtn: "🐞 Report a Bug",
         myReportsBtn: "📋 My Bug Reports",
         logoutBtn: "🚪 Logout",
-        closeBtn: "Close"
+        closeBtn: "Close",
+        // Dynamic Translations for JS
+        pendingApproval: "Pending Approval",
+        rejected: "Rejected",
+        approve: "Approve",
+        reject: "Reject",
+        share: "Share",
+        deletePost: "Delete Post",
+        editCat: "✏️ Edit Cat",
+        addLikes: "+ Likes",
+        noPosts: "No posts found in this category.",
+        loading: "Loading...",
+        searching: "Searching...",
+        usersTitle: "Users",
+        postsTitle: "Posts",
+        noUsersFound: "No users found.",
+        noPostsFound: "No posts found."
     }
+};
+
+// Translation Helper
+window.t = (key) => {
+    const lang = localStorage.getItem('st_lang') || 'sw';
+    return translations[lang][key] || key;
 };
 
 // --- 3. UTILITIES ---
@@ -89,10 +126,10 @@ const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 window.ui = {
     showToast: (msg, type = 'info') => {
         const c = document.getElementById('toast-container');
-        const t = document.createElement('div');
-        t.className = `toast ${type}`; t.innerText = msg;
-        c.appendChild(t);
-        setTimeout(() => { t.remove(); }, 3500);
+        const tDiv = document.createElement('div');
+        tDiv.className = `toast ${type}`; tDiv.innerText = msg;
+        c.appendChild(tDiv);
+        setTimeout(() => { tDiv.remove(); }, 3500);
     },
     toggleTheme: () => {
         document.body.classList.toggle('dark');
@@ -192,20 +229,21 @@ window.appAuth = {
 
 // --- 6. CORE FEATURES ---
 window.appFeatures = {
-    // Lugha System
     changeLang: (langCode) => {
         localStorage.setItem('st_lang', langCode);
-        
-        // Sync Dropdowns
         if(document.getElementById('auth-lang')) document.getElementById('auth-lang').value = langCode;
         if(document.getElementById('settings-lang')) document.getElementById('settings-lang').value = langCode;
 
-        // Apply translations
         const dict = translations[langCode] || translations['sw'];
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if(dict[key]) el.innerText = dict[key];
         });
+        
+        // Refresh feed to apply dynamic translations
+        if(currentUser && document.getElementById('view-home').classList.contains('active')) {
+            appFeatures.renderFeed();
+        }
     },
 
     getUser: async (userId) => {
@@ -236,9 +274,9 @@ window.appFeatures = {
         const isOwner = post.authorId === currentUser.id;
         const isAdmin = currentUser.role === 'admin';
         
-        let statusBadge = post.status === 'pending' ? `<span class="post-status">Pending Approval</span>` : '';
-        if (post.status === 'rejected') statusBadge = `<span class="post-status" style="background:#f8d7da; color:#721c24;">Rejected</span>`;
-        let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">✏️ Edit Cat</span>` : '';
+        let statusBadge = post.status === 'pending' ? `<span class="post-status">${t('pendingApproval')}</span>` : '';
+        if (post.status === 'rejected') statusBadge = `<span class="post-status" style="background:#f8d7da; color:#721c24;">${t('rejected')}</span>`;
+        let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">${t('editCat')}</span>` : '';
 
         let html = `
         <div class="card" id="post-${post.id}">
@@ -254,8 +292,8 @@ window.appFeatures = {
 
         if (context === 'admin_queue') {
             html += `<div class="post-actions">
-                        <button class="btn-outline" style="color:var(--success); border-color:var(--success);" onclick="appAdmin.moderatePost('${post.id}', 'approved')">Approve</button>
-                        <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.moderatePost('${post.id}', 'rejected')">Reject</button>
+                        <button class="btn-outline" style="color:var(--success); border-color:var(--success);" onclick="appAdmin.moderatePost('${post.id}', 'approved')">${t('approve')}</button>
+                        <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.moderatePost('${post.id}', 'rejected')">${t('reject')}</button>
                      </div>`;
         } else {
             const likeCount = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0);
@@ -265,15 +303,15 @@ window.appFeatures = {
                 <button class="action-btn ${isLiked ? 'active' : ''}" onclick="appFeatures.toggleLike('${post.id}')">❤️ ${likeCount}</button>
                 <button class="action-btn" onclick="appFeatures.openComments('${post.id}')">💬 ${commentCount}</button>
                 <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾</button>
-                <button class="action-btn" onclick="appFeatures.shareWhatsApp('${post.text}')">Share</button>
+                <button class="action-btn" onclick="appFeatures.shareWhatsApp('${post.text}')">${t('share')}</button>
             </div>`;
             
             if (isOwner || isAdmin) {
-                let extraAdminBtn = isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px; font-weight:bold;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">+ Likes</button>` : '';
+                let extraAdminBtn = isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px; font-weight:bold;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">${t('addLikes')}</button>` : '';
                 
                 html += `<div class="mt-1" style="text-align:right;">
                     ${extraAdminBtn}
-                    <button class="action-btn" style="display:inline; color:var(--danger)" onclick="appFeatures.deletePost('${post.id}')">Delete Post</button>
+                    <button class="action-btn" style="display:inline; color:var(--danger)" onclick="appFeatures.deletePost('${post.id}')">${t('deletePost')}</button>
                 </div>`;
             }
         }
@@ -302,7 +340,7 @@ window.appFeatures = {
             });
             
             if (!hasPosts) {
-                container.innerHTML += '<p style="text-align:center; color:var(--text-muted)">No posts found in this category.</p>';
+                container.innerHTML += `<p style="text-align:center; color:var(--text-muted)">${t('noPosts')}</p>`;
             }
         });
     },
@@ -440,7 +478,7 @@ window.appFeatures = {
         }
 
         const c = document.getElementById('other-profile-posts');
-        c.innerHTML = 'Loading posts...';
+        c.innerHTML = t('loading');
         
         const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
@@ -453,7 +491,7 @@ window.appFeatures = {
                 found = true;
             }
         });
-        if(!found) c.innerHTML = '<p style="text-align:center; color:var(--text-muted)">No posts found.</p>';
+        if(!found) c.innerHTML = `<p style="text-align:center; color:var(--text-muted)">${t('noPostsFound')}</p>`;
 
         router.navigate('other-profile');
     },
@@ -533,7 +571,7 @@ window.appFeatures = {
         if(event && event.target) event.target.classList.add('active');
         
         const c = document.getElementById('profile-posts-container'); 
-        c.innerHTML = 'Loading...';
+        c.innerHTML = t('loading');
         
         const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
@@ -555,7 +593,7 @@ window.appFeatures = {
             }
         });
 
-        if (!found) c.innerHTML = `<p style="text-align:center; margin-top:20px; color:var(--text-muted)">No posts found.</p>`;
+        if (!found) c.innerHTML = `<p style="text-align:center; margin-top:20px; color:var(--text-muted)">${t('noPostsFound')}</p>`;
     },
 
     // --- SEARCH ---
@@ -564,11 +602,11 @@ window.appFeatures = {
         const res = document.getElementById('search-results');
         if (!qText) { res.innerHTML = ''; return; }
         
-        res.innerHTML = 'Searching...';
+        res.innerHTML = t('searching');
         let html = '';
         
         const usersSnap = await getDocs(collection(db, "users"));
-        html += '<h4>Users</h4>';
+        html += `<h4>${t('usersTitle')}</h4>`;
         let userFound = false;
         usersSnap.forEach(docSnap => {
             const u = { id: docSnap.id, ...docSnap.data() };
@@ -580,10 +618,10 @@ window.appFeatures = {
                         </div>`; 
             }
         });
-        if(!userFound) html += '<p style="font-size:0.8rem">No users found.</p>';
+        if(!userFound) html += `<p style="font-size:0.8rem">${t('noUsersFound')}</p>`;
 
         const postsSnap = await getDocs(query(collection(db, "posts"), where("status", "==", "approved")));
-        html += '<h4 class="mt-1">Posts</h4>';
+        html += `<h4 class="mt-1">${t('postsTitle')}</h4>`;
         let postFound = false;
         postsSnap.forEach(docSnap => {
             const p = { id: docSnap.id, ...docSnap.data() };
@@ -592,7 +630,7 @@ window.appFeatures = {
                 html += appFeatures.createPostHTML(p);
             }
         });
-        if(!postFound) html += '<p style="font-size:0.8rem">No posts found.</p>';
+        if(!postFound) html += `<p style="font-size:0.8rem">${t('noPostsFound')}</p>`;
 
         res.innerHTML = html;
     },
@@ -647,15 +685,15 @@ window.appFeatures = {
         ui.showModal('settings-modal');
     },
     submitReport: async () => {
-        const t = document.getElementById('bug-text').value.trim();
-        if(!t) return ui.showToast('Empty report', 'error');
-        await addDoc(collection(db, "reports"), { uId: currentUser.id, username: currentUser.username, text: t, time: Date.now(), adminReply: null });
+        const tInput = document.getElementById('bug-text').value.trim();
+        if(!tInput) return ui.showToast('Empty report', 'error');
+        await addDoc(collection(db, "reports"), { uId: currentUser.id, username: currentUser.username, text: tInput, time: Date.now(), adminReply: null });
         ui.hideModal('bug-modal');
         ui.showToast('Report submitted to admin.', 'success');
     },
     renderMyReports: async () => {
         const list = document.getElementById('my-reports-list');
-        list.innerHTML = 'Loading...';
+        list.innerHTML = t('loading');
         const q = query(collection(db, "reports"), orderBy("time", "desc"));
         const snap = await getDocs(q);
         
@@ -719,7 +757,7 @@ window.appAdmin = {
     },
     renderPending: async () => {
         const area = document.getElementById('admin-content-area');
-        area.innerHTML = 'Loading...';
+        area.innerHTML = t('loading');
         const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
         const snap = await getDocs(q);
         
@@ -743,7 +781,7 @@ window.appAdmin = {
     },
     renderUsers: async () => {
         const area = document.getElementById('admin-content-area');
-        area.innerHTML = 'Loading...';
+        area.innerHTML = t('loading');
         const snap = await getDocs(collection(db, "users"));
         area.innerHTML = '<h4>Manage Users</h4>';
         
@@ -799,7 +837,7 @@ window.appAdmin = {
     },
     renderReports: async () => {
         const area = document.getElementById('admin-content-area');
-        area.innerHTML = 'Loading...';
+        area.innerHTML = t('loading');
         const snap = await getDocs(query(collection(db, "reports"), orderBy("time", "desc")));
         area.innerHTML = '<h4>User Reports / Bugs</h4>';
         if(snap.empty) return area.innerHTML += '<p>No reports found.</p>';
@@ -834,7 +872,7 @@ window.appAdmin = {
     },
     renderAppeals: async () => {
         const area = document.getElementById('admin-content-area');
-        area.innerHTML = 'Loading...';
+        area.innerHTML = t('loading');
         const snap = await getDocs(query(collection(db, "appeals"), orderBy("time", "desc")));
         area.innerHTML = '<h4>Account Block Appeals</h4>';
         if(snap.empty) return area.innerHTML += '<p>No pending appeals.</p>';
@@ -868,7 +906,7 @@ window.appAdmin = {
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h4>Manage Announcements</h4>
                 <button class="btn-primary" style="width:auto; padding:6px 16px; font-size:0.8rem;" onclick="ui.showModal('announcement-modal')">+ Create New</button>
-            </div><div id="ann-list">Loading...</div>`;
+            </div><div id="ann-list">${t('loading')}</div>`;
         
         const snap = await getDocs(collection(db, "announcements"));
         const list = document.getElementById('ann-list');
@@ -913,7 +951,6 @@ window.appAdmin = {
 
 // --- 8. START APP ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Start Language System
     const savedLang = localStorage.getItem('st_lang') || 'sw';
     appFeatures.changeLang(savedLang);
 
