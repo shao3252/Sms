@@ -1,0 +1,17 @@
+{
+  "name": "Sms Tamu",
+  "short_name": "Sms Tamu",
+  "description": "Share the sweetest love texts",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff477e",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/833/833472.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
