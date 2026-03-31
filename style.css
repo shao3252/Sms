@@ -1,4 +1,4 @@
-:root {
+ :root {
     --bg-color: #f0f2f5;
     --card-bg: #ffffff;
     --text-main: #1c1e21;
@@ -36,7 +36,7 @@ body { background: var(--bg-color); color: var(--text-main); transition: backgro
 .logo-text { font-size: 2.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; text-align: center; }
 .logo-text-small { font-size: 1.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
 
-/* Verified Badge (Meta Style) */
+/* Verified Badge */
 .verified-badge { display: inline-flex; align-items: center; justify-content: center; background: #1da1f2; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; margin-left: 5px; vertical-align: middle; font-weight: bold; }
 
 /* Categories */
