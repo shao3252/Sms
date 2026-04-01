@@ -64,9 +64,7 @@
             <div id="view-home" class="view active">
                 <div class="category-scroll" id="feed-categories">
                     <button class="cat-pill active" onclick="appFeatures.filterFeed('All')" data-i18n="catAll">Yote</button>
-                    
                     <button class="cat-pill premium-cat" onclick="window.location.href='premium.html'" style="border-color:#d4af37; color:#d4af37; font-weight:bold;">🌟 Message Kuntu</button>
-                    
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Apology messages')" data-i18n="catApology">Kuomba Msamaha</button>
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Messages of praise')" data-i18n="catPraise">Kusifia</button>
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Seductive Messages')" data-i18n="catSeductive">Kuvutia</button>
@@ -116,8 +114,12 @@
                     <p id="my-bio" style="color: var(--text-muted); margin-top: 5px;">No bio yet.</p>
                     
                     <div class="profile-stats">
-                        <div><strong id="my-following">0</strong><br><small data-i18n="followingText">Following</small></div>
-                        <div><strong id="my-followers">0</strong><br><small data-i18n="followersText">Followers</small></div>
+                        <div style="cursor:pointer;" onclick="appFeatures.showFollowingList(currentUser.id)">
+                            <strong id="my-following">0</strong><br><small data-i18n="followingText">Following</small>
+                        </div>
+                        <div style="cursor:pointer;" onclick="router.navigate('search')">
+                            <strong id="my-followers">0</strong><br><small data-i18n="followersText">Followers</small>
+                        </div>
                     </div>
                     
                     <button class="btn-outline mt-1" onclick="ui.showModal('edit-profile-modal')" data-i18n="editProfileBtn">Badili Wasifu</button>
@@ -135,7 +137,6 @@
             <div id="view-other-profile" class="view">
                 <div class="profile-header card">
                     <button class="btn-outline" style="position:absolute; top:15px; left:15px; padding:5px 10px;" onclick="router.navigate('home')">🔙</button>
-                    
                     <button id="user-block-btn" class="btn-outline" style="position:absolute; top:15px; right:15px; padding:5px 10px; color:var(--danger); border-color:var(--danger);" onclick="appFeatures.toggleBlockUser()">🚫 Block</button>
                     
                     <div class="prof-img-wrapper" style="margin-top:20px;">
@@ -146,8 +147,12 @@
                     <p id="other-bio" style="color: var(--text-muted); margin-top: 5px;"></p>
                     
                     <div class="profile-stats">
-                        <div><strong id="other-following">0</strong><br><small data-i18n="followingText">Following</small></div>
-                        <div><strong id="other-followers">0</strong><br><small data-i18n="followersText">Followers</small></div>
+                        <div style="cursor:pointer;" onclick="appFeatures.showFollowingList(viewingUserId)">
+                            <strong id="other-following">0</strong><br><small data-i18n="followingText">Following</small>
+                        </div>
+                        <div style="cursor:pointer;" onclick="router.navigate('search')">
+                            <strong id="other-followers">0</strong><br><small data-i18n="followersText">Followers</small>
+                        </div>
                     </div>
                     
                     <div class="mt-1">
@@ -183,9 +188,7 @@
                     <button class="btn-outline" style="border-color:#d4af37; color:#d4af37;" onclick="appAdmin.renderPremiumReq()">VIP Requests</button>
                     <button class="btn-outline" style="border-color:var(--success); color:var(--success);" onclick="appAdmin.renderPaymentSettings()">Pay Settings</button>
                     <button class="btn-outline" onclick="appAdmin.renderAnnouncements()">Announcements</button>
-                    
                     <button class="btn-outline" style="border-color:var(--danger); color:var(--danger); font-weight:bold;" onclick="appAdmin.renderReports()">🐞 Bug Reports</button>
-                    
                     <button class="btn-outline" onclick="appAdmin.renderAppeals()" style="grid-column: span 2; border-color:var(--primary); color:var(--primary);">Block Appeals</button>
                 </div>
                 
@@ -195,25 +198,25 @@
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="router.navigate('home')">
-                🏠<span data-i18n="navHome">Nyumbani</span>
-            </button>
-            <button class="nav-item" onclick="router.navigate('search')">
-                🔍<span data-i18n="navSearch">Tafuta</span>
-            </button>
-            <button class="nav-item create-btn" onclick="router.navigate('create')">
-                <div class="plus-icon">+</div>
-            </button>
+            <button class="nav-item active" onclick="router.navigate('home')">🏠<span data-i18n="navHome">Nyumbani</span></button>
+            <button class="nav-item" onclick="router.navigate('search')">🔍<span data-i18n="navSearch">Tafuta</span></button>
+            <button class="nav-item create-btn" onclick="router.navigate('create')"><div class="plus-icon">+</div></button>
             <button class="nav-item" onclick="window.location.href='chat.html'" style="position:relative;">
                 💬<span data-i18n="navChat">Chat</span>
                 <span id="chat-badge" class="badge chat-badge" style="display:none; background:var(--success);">0</span>
             </button>
-            <button class="nav-item" onclick="router.navigate('profile')">
-                👤<span data-i18n="navProfile">Wasifu</span>
-            </button>
+            <button class="nav-item" onclick="router.navigate('profile')">👤<span data-i18n="navProfile">Wasifu</span></button>
         </nav>
     </div>
 
+    <div id="following-modal" class="modal">
+        <div class="modal-content card" style="max-height: 80vh; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 15px; text-align: center;">Wanaofuatwa (Following)</h3>
+            <div id="following-list" style="flex: 1; overflow-y: auto; margin-bottom: 15px;"></div>
+            <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('following-modal')">Funga</button>
+        </div>
+    </div>
+    
     <div id="comment-modal" class="modal">
         <div class="modal-content card" style="max-height: 80vh; display: flex; flex-direction: column;">
             <h3 style="margin-bottom: 15px;">Comments</h3>
@@ -229,50 +232,23 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content card" style="text-align:center;">
             <h3 data-i18n="settingsTitle" style="margin-bottom: 15px;">Mipangilio</h3>
-            
+            <div style="margin: 15px 0; background: var(--bg-color); padding: 10px; border-radius: 12px;">
+                <label style="font-weight:bold; display:block; margin-bottom:5px;">🌍 Lugha / Language</label>
+                <select id="settings-lang" onchange="appFeatures.changeLang(this.value)" class="custom-select" style="margin-bottom:0;"><option value="sw">Kiswahili</option><option value="en">English</option></select>
+            </div>
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.toggleTheme()" data-i18n="toggleTheme">🌓 Badili Muonekano</button>
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); ui.showModal('bug-modal');" data-i18n="reportBugBtn">🐞 Ripoti Tatizo</button>
             <button id="btn-appeal" class="btn-outline mt-1" style="width:100%; display:none; background:#fff3cd; color:#856404; border-color:#856404;" onclick="ui.hideModal('settings-modal'); ui.showModal('appeal-modal');">⚖️ Omba Kufunguliwa Block</button>
-            
             <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
             <button class="btn-outline" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="appAuth.logout();" data-i18n="logoutBtn">🚪 Toka (Logout)</button>
             <button class="btn-outline mt-1" style="width:100%; border:none;" onclick="ui.hideModal('settings-modal')" data-i18n="closeBtn">Funga</button>
         </div>
     </div>
 
-    <div id="edit-profile-modal" class="modal">
-        <div class="modal-content card">
-            <h3 data-i18n="editProfileBtn" style="margin-bottom: 15px;">Badili Wasifu</h3>
-            <input type="text" id="edit-user" placeholder="Username">
-            <textarea id="edit-bio" placeholder="Bio"></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn-outline" style="flex:1;" onclick="ui.hideModal('edit-profile-modal')" data-i18n="closeBtn">Ghairi</button>
-                <button class="btn-primary" style="flex:1;" onclick="appFeatures.saveProfile()">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="bug-modal" class="modal">
-        <div class="modal-content card">
-            <h3 data-i18n="reportBugBtn" style="margin-bottom: 15px;">Ripoti Tatizo</h3>
-            <textarea id="bug-text" placeholder="Elezea tatizo lako hapa..."></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn-outline" style="flex:1;" onclick="ui.hideModal('bug-modal')" data-i18n="closeBtn">Ghairi</button>
-                <button class="btn-primary" style="flex:1;" onclick="appFeatures.submitReport()">Tuma Ripoti</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="announcement-modal" class="modal">
-        <div class="modal-content card">
-            <h3 style="margin-bottom: 15px;">New Announcement</h3>
-            <textarea id="announcement-text" placeholder="Write global announcement..."></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <button class="btn-outline" style="flex:1;" onclick="ui.hideModal('announcement-modal')">Cancel</button>
-                <button class="btn-primary" style="flex:1;" onclick="appAdmin.postAnnouncement()">Send</button>
-            </div>
-        </div>
-    </div>
+    <div id="edit-profile-modal" class="modal"><div class="modal-content card"><h3 data-i18n="editProfileBtn" style="margin-bottom: 15px;">Badili Wasifu</h3><input type="text" id="edit-user" placeholder="Username"><textarea id="edit-bio" placeholder="Bio"></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button class="btn-outline" style="flex:1;" onclick="ui.hideModal('edit-profile-modal')" data-i18n="closeBtn">Ghairi</button><button class="btn-primary" style="flex:1;" onclick="appFeatures.saveProfile()">Save</button></div></div></div>
+    <div id="bug-modal" class="modal"><div class="modal-content card"><h3 data-i18n="reportBugBtn" style="margin-bottom: 15px;">Ripoti Tatizo</h3><textarea id="bug-text" placeholder="Elezea tatizo lako hapa..."></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button class="btn-outline" style="flex:1;" onclick="ui.hideModal('bug-modal')" data-i18n="closeBtn">Ghairi</button><button class="btn-primary" style="flex:1;" onclick="appFeatures.submitReport()">Tuma Ripoti</button></div></div></div>
+    <div id="appeal-modal" class="modal"><div class="modal-content card"><h3>Request Review</h3><textarea id="appeal-text" placeholder="Write your appeal here..."></textarea><div class="modal-actions" style="display: flex; gap: 10px; margin-top: 10px;"><button class="btn-outline" style="flex:1;" onclick="ui.hideModal('appeal-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" style="flex:1;" onclick="appFeatures.submitAppeal()">Submit</button></div></div></div>
+    <div id="announcement-modal" class="modal"><div class="modal-content card"><h3 style="margin-bottom: 15px;">New Announcement</h3><textarea id="announcement-text" placeholder="Write global announcement..."></textarea><div style="display: flex; gap: 10px; margin-top: 10px;"><button class="btn-outline" style="flex:1;" onclick="ui.hideModal('announcement-modal')">Cancel</button><button class="btn-primary" style="flex:1;" onclick="appAdmin.postAnnouncement()">Send</button></div></div></div>
 
 </div>
 
