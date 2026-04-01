@@ -278,7 +278,6 @@ window.appFeatures = {
         return { username: 'Unknown', pic: '', verified: false, followers: [], following: [] };
     },
 
-    // FIX 1: PULL FRESH DB DATA BEFORE POSTING SO VERIFIED BADGE IS PERFECT
     createPost: async () => {
         if(currentUser.isBlocked) return ui.showToast('Account Restricted!', 'error');
         const text = document.getElementById('post-text').value.trim();
@@ -301,7 +300,6 @@ window.appFeatures = {
         router.navigate('home');
     },
 
-    // FIX 3: EDIT ANY POST FUNCTION
     editPost: async (postId) => {
         const postRef = doc(db, "posts", postId);
         const snap = await getDoc(postRef);
@@ -314,7 +312,6 @@ window.appFeatures = {
             await updateDoc(postRef, { text: newText.trim() });
             ui.showToast('Post updated successfully', 'success');
             
-            // Refresh view
             if(document.getElementById('view-home').classList.contains('active')) appFeatures.renderFeed();
             if(document.getElementById('view-single-post').classList.contains('active')) {
                 const updatedSnap = await getDoc(postRef);
@@ -402,7 +399,7 @@ window.appFeatures = {
         });
     },
 
-    // FIX 2: ANNOUNCEMENT MARQUEE ANIMATION
+    // --- SEHEMU ILIYOREKEBISHWA (ID imebadilika kuitwa announcement-marquee) ---
     renderAnnouncementsToFeed: async () => {
         const q = query(collection(db, "announcements"), orderBy("time", "desc"));
         const snap = await getDocs(q);
@@ -411,13 +408,13 @@ window.appFeatures = {
         let texts = [];
         snap.forEach(docSnap => {
             const a = docSnap.data();
-            if ((now - a.time) < 86400000) { // Active for 24 hrs
+            if ((now - a.time) < 86400000) { 
                 texts.push(sanitize(a.text));
             }
         });
         
         const bar = document.getElementById('announcement-bar');
-        const marquee = document.getElementById('announcement-text');
+        const marquee = document.getElementById('announcement-marquee'); // <--- Kosa lilikuwepo Hapa
         
         if(texts.length > 0) {
             bar.style.display = 'block';
@@ -601,7 +598,6 @@ window.appFeatures = {
         appFeatures.renderProfile();
     },
 
-    // FIX 4: UPDATE ALL PAST POSTS WHEN PICTURE CHANGES
     updateProfilePic: (e) => {
         const file = e.target.files[0]; if (!file) return;
         ui.showToast('Compressing and uploading image...', 'info');
@@ -625,7 +621,6 @@ window.appFeatures = {
                     currentUser.pic = base64Compressed;
                     localStorage.setItem('st_session', JSON.stringify(currentUser));
                     
-                    // UPDATE PAST POSTS PICS
                     const postsQuery = query(collection(db, "posts"), where("authorId", "==", currentUser.id));
                     const postsSnap = await getDocs(postsQuery);
                     postsSnap.forEach(async (docSnap) => {
@@ -743,8 +738,6 @@ window.appFeatures = {
             if (unread > 0) { b.style.display = 'block'; b.innerText = unread; } else { b.style.display = 'none'; }
         });
     },
-
-    // FIX 5: NOTIFICATION ROUTING
     handleNotificationClick: async (type, linkId, notifId) => {
         await updateDoc(doc(db, "notifications", notifId), { read: true });
         
@@ -754,7 +747,6 @@ window.appFeatures = {
             const postSnap = await getDoc(doc(db, "posts", linkId));
             if(!postSnap.exists()) return ui.showToast('Post no longer exists.', 'error');
             
-            // Generate HTML directly and switch view
             const postHTML = appFeatures.createPostHTML({ id: postSnap.id, ...postSnap.data() });
             document.getElementById('single-post-container').innerHTML = postHTML;
             router.navigate('single-post');
@@ -990,8 +982,6 @@ window.appAdmin = {
         ui.showToast(unblock ? 'User unblocked' : 'Appeal rejected', 'success');
         appAdmin.renderAppeals();
     },
-
-    // MAREKEBISHO YA ANNOUNCEMENT ADMIN VIEW
     renderAnnouncements: async () => {
         const area = document.getElementById('admin-content-area');
         area.innerHTML = `
@@ -1025,9 +1015,10 @@ window.appAdmin = {
         await deleteDoc(doc(db, "announcements", id));
         ui.showToast("Announcement deleted", "success"); 
         appAdmin.renderAnnouncements(); 
-        appFeatures.renderAnnouncementsToFeed(); // Update marquee
+        appFeatures.renderAnnouncementsToFeed();
     },
     postAnnouncement: async () => {
+        // --- SEHEMU ILIYOREKEBISHWA (ID ni ileile ya mwanzo announcement-text) ---
         const text = document.getElementById('announcement-text').value.trim();
         if(!text) return ui.showToast("Cannot be empty", "error");
         await addDoc(collection(db, "announcements"), { text: text, time: Date.now() });
@@ -1039,7 +1030,7 @@ window.appAdmin = {
         ui.hideModal('announcement-modal'); 
         ui.showToast('Sent to all!', 'success'); 
         appAdmin.renderAnnouncements();
-        appFeatures.renderAnnouncementsToFeed(); // Update marquee instantly
+        appFeatures.renderAnnouncementsToFeed(); 
     }
 };
 
@@ -1054,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(currentUser.role === 'admin') document.getElementById('admin-btn').style.display = 'block';
         
         appFeatures.renderFeed();
-        appFeatures.renderAnnouncementsToFeed(); // Start Marquee
+        appFeatures.renderAnnouncementsToFeed();
         
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
             if(docSnap.exists()) {
