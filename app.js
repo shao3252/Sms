@@ -86,10 +86,12 @@ window.ui = {
         localStorage.setItem('st_theme', isDark ? 'dark' : 'light'); 
     },
     showModal: (id) => {
-        document.getElementById(id).classList.add('active');
+        const modal = document.getElementById(id);
+        if(modal) modal.classList.add('active');
     },
     hideModal: (id) => {
-        document.getElementById(id).classList.remove('active');
+        const modal = document.getElementById(id);
+        if(modal) modal.classList.remove('active');
     },
     createFallingHeart: () => { 
         const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨']; 
@@ -111,7 +113,7 @@ const timeAgo = (ts) => {
     if (i > 1) return Math.floor(i) + "h ago"; 
     i = s / 60; 
     if (i > 1) return Math.floor(i) + "m ago"; 
-    return "Just now"; 
+    return "Hivi punde"; 
 };
 
 // CHECK CHAT UNREAD GREEN BADGE
@@ -135,7 +137,9 @@ const checkNewMessages = () => {
 window.router = {
     navigate: (viewId) => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(`view-${viewId}`).classList.add('active');
+        const activeView = document.getElementById(`view-${viewId}`);
+        if(activeView) activeView.classList.add('active');
+        
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         
         const navMap = { home: 0, search: 1, create: 2, notify: 3, profile: 4, 'my-reports': 4, 'single-post': 3 };
@@ -154,7 +158,6 @@ window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim(); 
         const pass = document.getElementById('login-pass').value;
-        
         if (!email || !pass) return ui.showToast('Ingiza email na password', 'error');
         
         const q = query(collection(db, "users"), where("email", "==", email), where("password", "==", pass));
@@ -164,7 +167,6 @@ window.appAuth = {
             const uDoc = snap.docs[0]; 
             let uData = uDoc.data();
             
-            // Auto promote Admin if email matches
             if (uData.email === 'shaolindown3252@gmail.com' && uData.role !== 'admin') { 
                 await updateDoc(doc(db, "users", uDoc.id), { role: 'admin', verified: true, isPremium: true }); 
                 uData.role = 'admin'; uData.verified = true; uData.isPremium = true;
@@ -268,7 +270,6 @@ window.appFeatures = {
             fakeLikes: 0 
         });
         
-        // IKIWA NI KUNTU, TUELEKEZE KWENYE PREMIUM.HTML
         if(cat === 'Message Kuntu') {
             ui.showToast('Posti ya Kuntu imetumwa!', 'success');
             document.getElementById('post-text').value = '';
@@ -384,13 +385,11 @@ window.appFeatures = {
             c.innerHTML = ''; 
             let found = false;
             
-            // Watu uliowablock
             const blocked = currentUser.blockedUsers || [];
             
             snap.forEach(d => { 
                 const p = { id: d.id, ...d.data() }; 
                 
-                // Meseji za Kuntu hazionekani kwenye feed ya kawaida
                 if (p.category === 'Message Kuntu') return;
 
                 if(p.status === 'approved' && !blocked.includes(p.authorId)) {
@@ -410,7 +409,7 @@ window.appFeatures = {
     filterFeed: (cat) => { 
         currentFeedCategory = cat; 
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active')); 
-        event.target.classList.add('active'); 
+        if(event && event.target) event.target.classList.add('active'); 
         appFeatures.renderFeed(); 
     },
     
@@ -437,7 +436,6 @@ window.appFeatures = {
             currentUser.saved.push(pId); 
             await updateDoc(r, { saved: arrayUnion(pId) }); 
         } 
-        
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
         appFeatures.renderFeed(); 
     },
@@ -460,7 +458,6 @@ window.appFeatures = {
             
             s.data().comments.forEach((c, index) => { 
                 const canDelete = currentUser.role === 'admin' || authorId === currentUser.id || c.uId === currentUser.id;
-                
                 const delBtn = canDelete ? `<button onclick="appFeatures.deleteComment('${pId}', ${index})" style="color:var(--danger); background:none; border:none; font-size:1.1rem; cursor:pointer;">🗑️</button>` : '';
                 
                 l.innerHTML += `
@@ -590,7 +587,7 @@ window.appFeatures = {
         } else {
             currentUser.blockedUsers.push(viewingUserId);
             await updateDoc(myRef, { blockedUsers: arrayUnion(viewingUserId) });
-            ui.showToast("Umemblock. Hutaona posti zake tena.", "info");
+            ui.showToast("Umemblock. Hutaona posti zake.", "info");
         }
         
         localStorage.setItem('st_session', JSON.stringify(currentUser));
@@ -717,10 +714,28 @@ window.appFeatures = {
                 r.innerHTML += appFeatures.createPostHTML(p); 
             } 
         }); 
+    },
+    
+    // FIX YA SETTINGS KUFUNGUKA VIZURI
+    openSettings: () => { 
+        const appealBtn = document.getElementById('btn-appeal');
+        if(appealBtn) {
+            appealBtn.style.display = currentUser.isBlocked ? 'block' : 'none'; 
+        }
+        ui.showModal('settings-modal'); 
+    }, 
+    
+    submitReport: async () => { 
+        const tInput = document.getElementById('bug-text').value.trim(); 
+        if(tInput) { 
+            await addDoc(collection(db, "reports"), { uId: currentUser.id, username: currentUser.username, text: tInput, time: Date.now(), adminReply: null }); 
+            ui.hideModal('bug-modal'); 
+            ui.showToast('Ripoti imetumwa kikamilifu.', 'success'); 
+            document.getElementById('bug-text').value = '';
+        } 
     }
 };
 
-// ADMIN PANEL VIZURI (WELL ARRANGED & BUG REPORTS)
 window.appAdmin = {
     toggleAutoApprove: async () => { 
         const newVal = !window.systemSettings.autoApprove; 
@@ -733,6 +748,7 @@ window.appAdmin = {
         if(newCat) { 
             await updateDoc(doc(db, "posts", postId), { category: newCat }); 
             ui.showToast('Kundi limebadilishwa', 'success'); 
+            appFeatures.renderFeed();
         } 
     },
     
@@ -741,12 +757,15 @@ window.appAdmin = {
         area.innerHTML = '<h4>Posti Zinasubiri Ukaguzi</h4>'; 
         
         const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc"))); 
+        let found = false;
         snap.forEach(d => { 
             const p = { id: d.id, ...d.data() }; 
             if(p.status === 'pending') {
                 area.innerHTML += appFeatures.createPostHTML(p, 'admin_queue'); 
+                found = true;
             }
         }); 
+        if(!found) area.innerHTML += "<p style='text-align:center;'>Hakuna posti zinazosubiri.</p>";
     },
     
     moderatePost: async (postId, status) => { 
@@ -793,28 +812,24 @@ window.appAdmin = {
         });
     },
     
-    // VERIFY FIX: Ina-update hadi posti za zamani zote
     toggleVerify: async (userId, currentStatus) => { 
         const newStatus = !currentStatus;
-        
-        // 1. Update the user document
         await updateDoc(doc(db, "users", userId), { verified: newStatus }); 
         
-        // 2. Update all their existing posts so the badge shows immediately
+        // Update Posti zake zote Zipate Tiki
         const postsQuery = query(collection(db, "posts"), where("authorId", "==", userId));
         const postsSnap = await getDocs(postsQuery);
-        
         postsSnap.forEach(async (docSnap) => {
             await updateDoc(doc(db, "posts", docSnap.id), { authorVerified: newStatus });
         });
 
-        ui.showToast(`Imewekwa Verified: ${newStatus}`, 'success'); 
+        ui.showToast(`Mtumiaji amekuwa Verified`, 'success'); 
         appAdmin.renderUsers(); 
     },
     
     toggleBlock: async (userId, currentStatus) => { 
         await updateDoc(doc(db, "users", userId), { isBlocked: !currentStatus }); 
-        ui.showToast('Block imebadilika', 'success'); 
+        ui.showToast('Block status imebadilika', 'success'); 
         appAdmin.renderUsers(); 
     },
     
@@ -826,7 +841,6 @@ window.appAdmin = {
         } 
     },
     
-    // BUG REPORTS KAMA ULIVYOOMBA
     renderReports: async () => { 
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4>Ripoti za Watumiaji (Bug Reports)</h4>'; 
@@ -868,7 +882,6 @@ window.appAdmin = {
         appAdmin.renderReports(); 
     },
 
-    // PREMIUM VIP REQUESTS DASHBOARD
     renderPremiumReq: async () => {
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4 style="color:#d4af37;">🌟 Maombi ya VIP (Message Kuntu)</h4>';
@@ -905,7 +918,6 @@ window.appAdmin = {
         appAdmin.renderPremiumReq();
     },
 
-    // SETTINGS ZA MALIPO YA VIP KUNTU
     renderPaymentSettings: () => {
         const area = document.getElementById('admin-content-area');
         let html = `<h4>Payment Methods (VIP)</h4>
