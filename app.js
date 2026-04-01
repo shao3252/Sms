@@ -122,7 +122,6 @@ const timeAgo = (ts) => {
     return "Hivi punde"; 
 };
 
-// CHECK CHAT UNREAD GREEN BADGE
 const checkNewMessages = () => {
     const lastSeen = parseInt(localStorage.getItem('st_chat_last_seen')) || 0;
     const q = query(collection(db, "global_chat"), where("timestamp", ">", lastSeen));
@@ -244,6 +243,46 @@ window.appFeatures = {
         const snap = await getDoc(doc(db, "users", uId)); 
         return snap.exists() ? { id: snap.id, ...snap.data() } : { username: 'Unknown', pic: '', verified: false, isPremium: false, followers: [], following: [], blockedUsers: [] }; 
     },
+
+    // FUNCTION MPYA: Kuleta Orodha ya Following
+    showFollowingList: async (targetId) => {
+        if(!targetId) return;
+        
+        const listContainer = document.getElementById('following-list');
+        listContainer.innerHTML = '<p style="text-align:center;">Inapakia...</p>';
+        window.ui.showModal('following-modal');
+
+        const userSnap = await getDoc(doc(db, "users", targetId));
+        if(!userSnap.exists()) {
+            listContainer.innerHTML = '<p style="text-align:center;">Mtumiaji hajapatikana.</p>';
+            return;
+        }
+
+        const followingArray = userSnap.data().following || [];
+        if(followingArray.length === 0) {
+            listContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Hafuati mtu yeyote.</p>';
+            return;
+        }
+
+        // Tunavuta users wote kisha tunachuja (Simple logic kwakuwa App inakua)
+        const usersSnap = await getDocs(collection(db, "users"));
+        let html = '';
+        
+        usersSnap.forEach(d => {
+            if(followingArray.includes(d.id)) {
+                const u = d.data();
+                html += `
+                <div class="card" style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:10px; padding:10px;" onclick="ui.hideModal('following-modal'); appFeatures.viewUserProfile('${d.id}')">
+                    <img src="${u.pic || defaultAvatar}" class="avatar" style="width:40px; height:40px;">
+                    <div>
+                        <strong>${sanitize(u.username)} ${getVerifiedIcon(u.verified)} ${getPremiumIcon(u.isPremium)}</strong>
+                    </div>
+                </div>`;
+            }
+        });
+        
+        listContainer.innerHTML = html || '<p style="text-align:center;">Hakuna taarifa zilizopatikana.</p>';
+    },
     
     createPost: async () => {
         if(currentUser.isBlocked) return window.ui.showToast('Akaunti Yako Imezuiwa!', 'error');
@@ -336,7 +375,6 @@ window.appFeatures = {
         const isOwner = post.authorId === currentUser.id; 
         const isAdmin = currentUser.role === 'admin';
         
-        // Live Cache
         const cachedUser = window.usersCache[post.authorId] || {};
         const authorVerified = cachedUser.verified !== undefined ? cachedUser.verified : post.authorVerified;
         const authorPremium = cachedUser.isPremium || false;
@@ -731,7 +769,6 @@ window.appFeatures = {
         }); 
     },
     
-    // FIX YA SETTINGS KUFUNGUKA VIZURI SALAMA KABISA
     openSettings: () => { 
         try {
             const appealBtn = document.getElementById('btn-appeal');
@@ -761,7 +798,6 @@ window.appAdmin = {
         } 
     },
     
-    // FIX YA ADD FAKE LIKES
     addFakeLikes: async (postId, currentFake) => { 
         const amountStr = prompt("Weka idadi ya likes za kuongeza (Mfn: 100):"); 
         if(!amountStr) return;
@@ -780,7 +816,6 @@ window.appAdmin = {
         }
     },
     
-    // FIX YA ADD FAKE FOLLOWERS
     addFakeFollowers: async (userId, currentFake) => { 
         const amountStr = prompt("Weka idadi ya followers kuongeza (Mfn: 1000):"); 
         if(!amountStr) return;
@@ -796,7 +831,6 @@ window.appAdmin = {
         window.appAdmin.renderUsers(); 
     },
 
-    // FIX YA ANNOUNCEMENT
     postAnnouncement: async () => { 
         const input = document.getElementById('announcement-text');
         if(!input) return window.ui.showToast('Sehemu ya kuandika haipo!', 'error');
