@@ -15,7 +15,7 @@
 }
 
 .dark {
-    --bg-color: #0b141a;
+    --bg-color: #0b141a; 
     --card-bg: #111b21;
     --text-main: #e9edef;
     --text-muted: #8696a0;
@@ -446,14 +446,18 @@ textarea { resize: none; height: 100px; }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 
-/* CHAT UI STYLE YA KAWAIDA (Iliyo nzuri inayofit Sms Tamu, sio WhatsApp) */
+/* =========================================
+   CHAT UI - FIX YA KEYBOARD KUPANDA JUU
+========================================= */
 .chat-container { 
     display: flex; 
     flex-direction: column; 
-    height: calc(100vh - 80px); 
+    height: 100vh; /* Fallback kwa vivinjari vya zamani */
+    height: 100dvh; /* Dynamic Viewport Height: Hii ndio inazuia Keyboard isiharibu UI */
     background: var(--bg-color); 
     border: none; 
     padding: 0;
+    overflow: hidden; /* Inazuia scroll isiyohitajika nyuma */
 }
 
 .chat-box { 
