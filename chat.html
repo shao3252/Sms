@@ -65,6 +65,7 @@
             <button id="opt-profile" class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionViewProfile()">👤 View Profile</button>
             <button id="opt-pin" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionPin()">📌 Pin Message</button>
             <button id="opt-admin-make" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--secondary);" onclick="chatSystem.actionMakeAdmin()">👑 Make Group Admin</button>
+            <button id="opt-admin-remove" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionRemoveAdmin()">⬇️ Toa U-admin (Remove Admin)</button>
             <button id="opt-block" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionBlockUser()">🚫 Block User</button>
             <button id="opt-delete" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionDelete()">🗑️ Delete Message</button>
             <button class="btn-primary mt-1" onclick="ui.hideModal('msg-options-modal')">Ghairi</button>
@@ -75,7 +76,6 @@
         <div class="modal-content card">
             <h3>📌 Pinned Messages</h3>
             <div id="pinned-list-container" style="max-height:300px; overflow-y:auto; margin:15px 0;"></div>
-            
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('pinned-modal')">Funga</button>
         </div>
     </div>
