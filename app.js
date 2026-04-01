@@ -6,89 +6,80 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
-  authDomain: "smstamu-28748.firebaseapp.com",
-  projectId: "smstamu-28748",
-  storageBucket: "smstamu-28748.firebasestorage.app",
-  messagingSenderId: "928000331591",
-  appId: "1:928000331591:web:d71a658eb34feeea620662",
-  measurementId: "G-1VQHWVQS39"
+    apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
+    authDomain: "smstamu-28748.firebaseapp.com",
+    projectId: "smstamu-28748",
+    storageBucket: "smstamu-28748.firebasestorage.app",
+    messagingSenderId: "928000331591",
+    appId: "1:928000331591:web:d71a658eb34feeea620662"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Enable Offline Mode
+// Offline Mode
 enableIndexedDbPersistence(db).catch(() => {});
 
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
 let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
-window.systemSettings = { autoApprove: false };
 
-// STRICT SPAM FILTER (Haturuhusu link wala tarakimu yoyote)
+// Settings za Kawaida za App
+window.systemSettings = { 
+    autoApprove: false,
+    premiumPrice: "3000",
+    paymentMethods: [{ network: "Vodacom", number: "255799178372", name: "Gumba Gumba" }]
+};
+
+// ANTI-SPAM: Haturuhusu tarakimu hata moja wala Links
 const isSpamText = (text) => {
     const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9]+\.(com|net|org|co|tz|me|io|info))/i;
     const digitRegex = /\d/; 
     return linkRegex.test(text) || digitRegex.test(text);
 };
 
-const translations = {
-    sw: {
-        welcomeSub: "Shiriki meseji tamu za mapenzi", loginHeader: "Ingia", regHeader: "Jisajili",
-        loginBtn: "Ingia", regBtn: "Jisajili", noAccount: "Hauna akaunti?", haveAccount: "Tayari una akaunti?",
-        navHome: "Nyumbani", navSearch: "Tafuta", navChat: "Chat", navAlerts: "Taarifa", navProfile: "Wasifu",
-        draftTitle: "Andika Meseji", sendApprovalBtn: "Tuma", followingText: "Unaowafuata",
-        followersText: "Wanaokufuata", editProfileBtn: "Badili Wasifu", myPostsTab: "Posti Zangu",
-        likedTab: "Zilizopendwa", savedTab: "Zilizohifadhiwa", settingsTitle: "Mipangilio",
-        toggleTheme: "🌓 Badili Muonekano", reportBugBtn: "🐞 Ripoti Tatizo", myReportsBtn: "📋 Ripoti Zangu",
-        logoutBtn: "🚪 Toka", closeBtn: "Funga", pendingApproval: "Inasubiri Kukaguliwa",
-        rejected: "Imekataliwa", approve: "Ruhusu", reject: "Kataa", share: "Shiriki", copy: "📋 Copy",
-        deletePost: "Futa", editPost: "✏️ Edit", editCat: "✏️ Kundi", addLikes: "+ Likes",
-        noPosts: "Hakuna posti kwenye kundi hili.", loading: "Inaload...", searching: "Inatafuta...",
-        usersTitle: "Watumiaji", postsTitle: "Posti", noUsersFound: "Hakuna mtumiaji aliyepatikana.",
-        noPostsFound: "Hakuna posti zilizopatikana.", catAll: "Yote", catSelect: "Chagua Kundi...",
-        catApology: "Kuomba Msamaha", catPraise: "Kusifia", catSeductive: "Kuvutia", catOther: "Mengineyo"
-    },
-    en: {
-        welcomeSub: "Share the sweetest love texts", loginHeader: "Login", regHeader: "Register",
-        loginBtn: "Login", regBtn: "Register", noAccount: "Don't have an account?", haveAccount: "Already have an account?",
-        navHome: "Home", navSearch: "Search", navChat: "Chat", navAlerts: "Alerts", navProfile: "Profile",
-        draftTitle: "Draft a Love Text", sendApprovalBtn: "Post Message", followingText: "Following",
-        followersText: "Followers", editProfileBtn: "Edit Profile", myPostsTab: "My Posts",
-        likedTab: "Liked", savedTab: "Saved", settingsTitle: "Settings", toggleTheme: "🌓 Change Theme",
-        reportBugBtn: "🐞 Report a Bug", myReportsBtn: "📋 My Bug Reports", logoutBtn: "🚪 Logout",
-        closeBtn: "Close", pendingApproval: "Pending Approval", rejected: "Rejected", approve: "Approve",
-        reject: "Reject", share: "Share", copy: "📋 Copy", deletePost: "Delete", editPost: "✏️ Edit",
-        editCat: "✏️ Edit Cat", addLikes: "+ Likes", noPosts: "No posts found in this category.",
-        loading: "Loading...", searching: "Searching...", usersTitle: "Users", postsTitle: "Posts",
-        noUsersFound: "No users found.", noPostsFound: "No posts found.", catAll: "All", catSelect: "Select a Category...",
-        catApology: "Apology messages", catPraise: "Messages of praise", catSeductive: "Seductive Messages", catOther: "Other"
-    }
-};
-
+// Translation Basic (Kiswahili)
 window.t = (key) => { 
-    const lang = localStorage.getItem('st_lang') || 'sw'; 
-    return translations[lang][key] || key; 
+    const map = {
+        'catAll': 'Yote',
+        'catApology': 'Kuomba Msamaha',
+        'catPraise': 'Kusifia',
+        'catSeductive': 'Kuvutia',
+        'catOther': 'Mengineyo',
+        'pendingApproval': 'Inasubiri Kukaguliwa',
+        'rejected': 'Imekataliwa',
+        'noPostsFound': 'Hakuna posti zilizopatikana.',
+        'loading': 'Inapakia...'
+    };
+    return map[key] || key; 
 };
 
-const getCategoryTranslation = (c) => t({'All':'catAll', 'Apology messages':'catApology', 'Messages of praise':'catPraise', 'Seductive Messages':'catSeductive', 'Other':'catOther'}[c] || 'catOther');
+const getCategoryTranslation = (c) => {
+    if(c === 'Message Kuntu') return '🌟 VIP Kuntu';
+    const map = {
+        'All': 'catAll', 
+        'Apology messages': 'catApology', 
+        'Messages of praise': 'catPraise', 
+        'Seductive Messages': 'catSeductive', 
+        'Other': 'catOther'
+    };
+    return window.t(map[c] || 'catOther');
+};
 
 const sanitize = (str) => str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-
-// Hii inatengeneza tick ya bluu kwa walio verified
 const getVerifiedIcon = (v) => v ? `<span class="verified-badge">✓</span>` : '';
+const getPremiumIcon = (p) => p ? `<span class="premium-badge" style="color:#d4af37; margin-left:5px;">🌟</span>` : '';
 const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
 
 window.ui = {
-    showToast: (m, type = 'info') => {
+    showToast: (m, type = 'info') => { 
         const c = document.getElementById('toast-container'); 
-        const tDiv = document.createElement('div');
+        const tDiv = document.createElement('div'); 
         tDiv.className = `toast ${type}`; 
         tDiv.innerText = m; 
         c.appendChild(tDiv); 
-        setTimeout(() => tDiv.remove(), 3500);
+        setTimeout(() => tDiv.remove(), 3500); 
     },
     toggleTheme: () => { 
         const isDark = document.body.classList.toggle('dark'); 
@@ -96,36 +87,38 @@ window.ui = {
     },
     showModal: (id) => document.getElementById(id).classList.add('active'),
     hideModal: (id) => document.getElementById(id).classList.remove('active'),
-    createFallingHeart: () => {
-        const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨'];
+    createFallingHeart: () => { 
+        const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨']; 
         const heart = document.createElement('div'); 
         heart.className = 'heart-fall'; 
-        heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+        heart.innerText = hearts[Math.floor(Math.random() * hearts.length)]; 
         heart.style.left = Math.random() * 100 + 'vw'; 
         heart.style.animationDuration = (Math.random() * 5 + 5) + 's'; 
         document.body.appendChild(heart); 
-        setTimeout(() => heart.remove(), 10000);
+        setTimeout(() => heart.remove(), 10000); 
     }
 };
 
-const timeAgo = (ts) => {
+const timeAgo = (ts) => { 
     const s = Math.floor((Date.now() - ts) / 1000); 
     let i = s / 86400; 
-    if (i > 1) return Math.floor(i) + "d ago";
+    if (i > 1) return Math.floor(i) + "d ago"; 
     i = s / 3600; 
     if (i > 1) return Math.floor(i) + "h ago"; 
     i = s / 60; 
     if (i > 1) return Math.floor(i) + "m ago"; 
-    return "Just now";
+    return "Just now"; 
 };
 
-// CHAT UNREAD BADGE
+// CHECK CHAT UNREAD GREEN BADGE
 const checkNewMessages = () => {
     const lastSeen = parseInt(localStorage.getItem('st_chat_last_seen')) || 0;
     const q = query(collection(db, "global_chat"), where("timestamp", ">", lastSeen));
+    
     onSnapshot(q, (snap) => {
         const badge = document.getElementById('chat-badge');
         if (badge) {
+            // Kama haupo kwenye chat.html na kuna meseji mpya
             if (!snap.empty && window.location.pathname.indexOf('chat.html') === -1) {
                 badge.style.display = 'block'; 
                 badge.innerText = snap.size;
@@ -149,7 +142,6 @@ window.router = {
         
         if (viewId === 'home') appFeatures.renderFeed();
         if (viewId === 'profile') appFeatures.renderProfile();
-        if (viewId === 'notify') appFeatures.renderNotifications();
         if (viewId === 'admin') appAdmin.renderPending();
         window.scrollTo(0,0);
     }
@@ -159,36 +151,38 @@ window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim(); 
         const pass = document.getElementById('login-pass').value;
+        if (!email || !pass) return ui.showToast('Ingiza email na password', 'error');
         
-        if (!email || !pass) return ui.showToast('Enter email and password', 'error');
+        const q = query(collection(db, "users"), where("email", "==", email), where("password", "==", pass));
+        const snap = await getDocs(q);
         
-        const snap = await getDocs(query(collection(db, "users"), where("email", "==", email), where("password", "==", pass)));
         if (!snap.empty) {
             const uDoc = snap.docs[0]; 
             let uData = uDoc.data();
             
+            // Auto promote Admin if email matches
             if (uData.email === 'shaolindown3252@gmail.com' && uData.role !== 'admin') { 
-                await updateDoc(doc(db, "users", uDoc.id), { role: 'admin', verified: true }); 
-                uData.role = 'admin'; 
-                uData.verified = true; 
+                await updateDoc(doc(db, "users", uDoc.id), { role: 'admin', verified: true, isPremium: true }); 
+                uData.role = 'admin'; uData.verified = true; uData.isPremium = true;
             }
             
             currentUser = { id: uDoc.id, ...uData }; 
             localStorage.setItem('st_session', JSON.stringify(currentUser)); 
             location.reload();
         } else {
-            ui.showToast('Invalid Login', 'error');
+            ui.showToast('Login imefeli. Hakikisha taarifa zako.', 'error');
         }
     },
+    
     register: async () => {
         const user = document.getElementById('reg-user').value.trim(); 
         const email = document.getElementById('reg-email').value.trim(); 
         const pass = document.getElementById('reg-pass').value;
         
-        if (!user || !email || !pass) return ui.showToast('Fill all fields', 'error');
+        if (!user || !email || !pass) return ui.showToast('Jaza sehemu zote', 'error');
         
         const checkSnap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
-        if(!checkSnap.empty) return ui.showToast('Email already in use', 'error');
+        if(!checkSnap.empty) return ui.showToast('Email inatumika tayari', 'error');
         
         const isAdmin = email === 'shaolindown3252@gmail.com';
         
@@ -198,26 +192,30 @@ window.appAuth = {
             password: pass, 
             role: isAdmin ? "admin" : "user", 
             verified: isAdmin, 
+            isPremium: isAdmin, 
             isBlocked: false, 
             followers: [], 
             following: [], 
+            blockedUsers: [], 
             bio: "", 
             pic: "", 
             fakeFollowers: 0 
         });
         
-        ui.showToast('Success! Now Login', 'success'); 
+        ui.showToast('Usajili umekamilika! Sasa ingia (Login).', 'success'); 
         appAuth.toggleAuth();
     },
+    
     logout: () => { 
         localStorage.removeItem('st_session'); 
         location.reload(); 
     },
-    toggleAuth: () => {
+    
+    toggleAuth: () => { 
         const l = document.getElementById('login-form'); 
-        const r = document.getElementById('register-form');
+        const r = document.getElementById('register-form'); 
         l.style.display = l.style.display === 'none' ? 'block' : 'none'; 
-        r.style.display = r.style.display === 'none' ? 'block' : 'none';
+        r.style.display = r.style.display === 'none' ? 'block' : 'none'; 
     }
 };
 
@@ -229,25 +227,28 @@ window.appFeatures = {
     
     getUser: async (uId) => { 
         const snap = await getDoc(doc(db, "users", uId)); 
-        return snap.exists() ? { id: snap.id, ...snap.data() } : { username: 'Unknown', pic: '', verified: false, followers: [], following: [] }; 
+        return snap.exists() ? { id: snap.id, ...snap.data() } : { username: 'Unknown', pic: '', verified: false, isPremium: false, followers: [], following: [], blockedUsers: [] }; 
     },
     
     createPost: async () => {
-        if(currentUser.isBlocked) return ui.showToast('Account Restricted!', 'error');
+        if(currentUser.isBlocked) return ui.showToast('Akaunti Yako Imezuiwa!', 'error');
         
         const text = document.getElementById('post-text').value.trim(); 
         const cat = document.getElementById('post-category').value;
+        if(!text || !cat) return ui.showToast('Chagua Kundi na uandike meseji', 'error');
         
-        if(!text || !cat) return ui.showToast('Select Category & Type Text', 'error');
+        if(currentUser.role !== 'admin' && cat === 'Message Kuntu') {
+            return ui.showToast('Admin pekee ndio anaruhusiwa kupost Kuntu!', 'error');
+        }
         
-        // ZUIA NAMBA NA LINK
         if(currentUser.role !== 'admin' && isSpamText(text)) {
-            return ui.showToast('Hauruhusiwi kuweka Namba au Link!', 'error');
+            return ui.showToast('Hauruhusiwi kuweka Namba au Link yoyote!', 'error');
         }
 
         const uSnap = await getDoc(doc(db, "users", currentUser.id)); 
         const freshUser = uSnap.data();
         
+        // Auto approve logic
         const postStatus = window.systemSettings.autoApprove || freshUser.role === 'admin' ? 'approved' : 'pending';
 
         await addDoc(collection(db, "posts"), { 
@@ -264,34 +265,51 @@ window.appFeatures = {
             fakeLikes: 0 
         });
         
-        ui.showToast(postStatus === 'approved' ? 'Imepostiwa!' : 'Sent for Review', 'success');
+        ui.showToast(postStatus === 'approved' ? 'Imepostiwa Kikamilifu!' : 'Imetumwa Kusubiri Ukaguzi', 'success');
         document.getElementById('post-text').value = ''; 
         router.navigate('home');
     },
-    
+
     editPost: async (pId) => {
         const pRef = doc(db, "posts", pId); 
         const snap = await getDoc(pRef); 
         if(!snap.exists()) return;
         
-        const newText = prompt("Edit text:", snap.data().text);
+        const newText = prompt("Hariri Meseji:", snap.data().text);
         if(newText) {
             if(currentUser.role !== 'admin' && isSpamText(newText)) {
                 return ui.showToast('Hauruhusiwi kuweka Namba au Link!', 'error');
             }
             await updateDoc(pRef, { text: newText.trim() }); 
-            ui.showToast('Updated', 'success'); 
+            ui.showToast('Imerekebishwa!', 'success'); 
             router.navigate('home');
         }
     },
-    
-    sharePost: (encodedText) => { 
-        const text = decodeURIComponent(encodedText); 
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + " \n\n- Kutoka Sms Tamu 💖")}`); 
+
+    // NATIVE SHARE (If fails, opens WhatsApp)
+    sharePost: async (encodedText) => {
+        const text = decodeURIComponent(encodedText);
+        const shareData = { 
+            title: 'Sms Tamu 💖', 
+            text: text + '\n\n- Kutoka Sms Tamu 💖\n(Soma zaidi: https://shao3252.github.io/Sms/)' 
+        };
+        
+        if (navigator.share && navigator.canShare(shareData)) {
+            try { 
+                await navigator.share(shareData); 
+            } catch (err) { 
+                console.log('User canceled share'); 
+            }
+        } else {
+            // Fallback kwa WhatsApp pekee kama simu hairuhusu
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.text)}`);
+        }
     },
-    
+
     copyText: (encodedText) => { 
-        navigator.clipboard.writeText(decodeURIComponent(encodedText)).then(() => ui.showToast(t('copy')+' Success!', 'success')); 
+        navigator.clipboard.writeText(decodeURIComponent(encodedText)).then(() => {
+            ui.showToast('Imecopyiwa!', 'success');
+        }); 
     },
     
     createPostHTML: (post, context = 'feed') => {
@@ -300,15 +318,15 @@ window.appFeatures = {
         const isOwner = post.authorId === currentUser.id; 
         const isAdmin = currentUser.role === 'admin';
         
-        let statusBadge = post.status === 'pending' ? `<span class="post-status">${t('pendingApproval')}</span>` : (post.status === 'rejected' ? `<span class="post-status" style="background:#f8d7da; color:#721c24;">${t('rejected')}</span>` : '');
-        let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">${t('editCat')}</span>` : '';
+        let statusBadge = post.status === 'pending' ? `<span class="post-status">${window.t('pendingApproval')}</span>` : (post.status === 'rejected' ? `<span class="post-status" style="background:#f8d7da; color:#721c24;">${window.t('rejected')}</span>` : '');
+        let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">✏️ Kundi</span>` : '';
         
         let html = `
         <div class="card" id="post-${post.id}">
             <div class="post-header">
                 <img src="${post.authorPic || defaultAvatar}" class="avatar" onclick="appFeatures.viewUserProfile('${post.authorId}')">
                 <div class="post-meta">
-                    <div class="post-author" onclick="appFeatures.viewUserProfile('${post.authorId}')">
+                    <div class="post-author" onclick="appFeatures.viewUserProfile('${post.authorId}')" style="cursor:pointer;">
                         ${sanitize(post.authorName)} ${getVerifiedIcon(post.authorVerified)}
                     </div>
                     <div class="post-time">
@@ -322,8 +340,8 @@ window.appFeatures = {
         if (context === 'admin_queue') {
             html += `
             <div class="post-actions">
-                <button class="btn-outline" style="color:var(--success); border-color:var(--success);" onclick="appAdmin.moderatePost('${post.id}', 'approved')">${t('approve')}</button>
-                <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.moderatePost('${post.id}', 'rejected')">${t('reject')}</button>
+                <button class="btn-outline" style="color:var(--success); border-color:var(--success);" onclick="appAdmin.moderatePost('${post.id}', 'approved')">Ruhusu (Approve)</button>
+                <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.moderatePost('${post.id}', 'rejected')">Kataa (Reject)</button>
             </div>`;
         } else {
             const lC = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0); 
@@ -333,44 +351,54 @@ window.appFeatures = {
             <div class="post-actions">
                 <button class="action-btn ${isLiked ? 'active' : ''}" onclick="appFeatures.toggleLike('${post.id}')">❤️ ${lC}</button>
                 <button class="action-btn" onclick="appFeatures.openComments('${post.id}')">💬 ${cC}</button>
-                <button class="action-btn" onclick="appFeatures.copyText('${encodeURIComponent(post.text)}')">${t('copy')}</button>
-                <button class="action-btn" onclick="appFeatures.sharePost('${encodeURIComponent(post.text)}')">${t('share')}</button>
-                <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾</button>
+                <button class="action-btn" onclick="appFeatures.copyText('${encodeURIComponent(post.text)}')">📋 Copy</button>
+                <button class="action-btn" onclick="appFeatures.sharePost('${encodeURIComponent(post.text)}')">🚀 Share</button>
+                <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾 Save</button>
             </div>`;
             
             if (isOwner || isAdmin) {
                 html += `
                 <div class="mt-1" style="text-align:right;">
-                    ${isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px; font-weight:bold;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">${t('addLikes')}</button>` : ''}
-                    <button class="action-btn" style="display:inline; color:var(--primary); margin-right:15px; font-weight:bold;" onclick="appFeatures.editPost('${post.id}')">${t('editPost')}</button>
-                    <button class="action-btn" style="display:inline; color:var(--danger)" onclick="appFeatures.deletePost('${post.id}')">${t('deletePost')}</button>
+                    ${isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">+ Likes</button>` : ''}
+                    <button class="action-btn" style="display:inline; color:var(--primary); margin-right:15px;" onclick="appFeatures.editPost('${post.id}')">✏️ Edit</button>
+                    <button class="action-btn" style="display:inline; color:var(--danger)" onclick="appFeatures.deletePost('${post.id}')">🗑️ Futa</button>
                 </div>`;
             }
         }
         return html + `</div>`;
     },
-    
+
     renderFeed: () => {
-        onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), (snap) => {
+        const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+        onSnapshot(q, (snap) => {
             const c = document.getElementById('feed-container'); 
             if(!c) return; 
             c.innerHTML = ''; 
             let found = false;
             
+            // Array ya watu uliowablock
+            const blocked = currentUser.blockedUsers || [];
+            
             snap.forEach(d => { 
                 const p = { id: d.id, ...d.data() }; 
-                if(p.status === 'approved' && (currentFeedCategory === 'All' || p.category === currentFeedCategory)) { 
-                    c.innerHTML += appFeatures.createPostHTML(p); 
-                    found = true; 
+                
+                // Meseji za Kuntu hazionekani hapa kabisa hata kwenye All
+                if (p.category === 'Message Kuntu') return;
+
+                if(p.status === 'approved' && !blocked.includes(p.authorId)) {
+                    if (currentFeedCategory === 'All' || p.category === currentFeedCategory) { 
+                        c.innerHTML += appFeatures.createPostHTML(p); 
+                        found = true; 
+                    }
                 } 
             });
             
             if (!found) {
-                c.innerHTML = `<p style="text-align:center; color:var(--text-muted)">${t('noPostsFound')}</p>`;
+                c.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">${window.t('noPostsFound')}</p>`;
             }
         });
     },
-    
+
     filterFeed: (cat) => { 
         currentFeedCategory = cat; 
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active')); 
@@ -380,10 +408,8 @@ window.appFeatures = {
     
     toggleLike: async (pId) => { 
         if(currentUser.isBlocked) return; 
-        
         const r = doc(db, "posts", pId); 
         const s = await getDoc(r); 
-        
         if(s.exists() && s.data().likes && s.data().likes.includes(currentUser.id)) {
             await updateDoc(r, { likes: arrayRemove(currentUser.id) }); 
         } else { 
@@ -394,7 +420,6 @@ window.appFeatures = {
     toggleSave: async (pId) => { 
         const r = doc(db, "users", currentUser.id); 
         if (!currentUser.saved) currentUser.saved = []; 
-        
         if (currentUser.saved.includes(pId)) { 
             currentUser.saved = currentUser.saved.filter(id => id !== pId); 
             await updateDoc(r, { saved: arrayRemove(pId) }); 
@@ -402,13 +427,12 @@ window.appFeatures = {
             currentUser.saved.push(pId); 
             await updateDoc(r, { saved: arrayUnion(pId) }); 
         } 
-        
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
         appFeatures.renderFeed(); 
     },
     
     deletePost: async (pId) => { 
-        if(confirm("Delete post?")) { 
+        if(confirm("Uhakika unataka kufuta posti hii?")) { 
             await deleteDoc(doc(db, "posts", pId)); 
             router.navigate('home'); 
         } 
@@ -421,17 +445,46 @@ window.appFeatures = {
         l.innerHTML = ''; 
         
         if (s.exists() && s.data().comments) {
-            s.data().comments.forEach(c => { 
+            const authorId = s.data().authorId; // Mwenye posti
+            
+            s.data().comments.forEach((c, index) => { 
+                // Admin, Mwenye posti, au Mwenye Comment ana uwezo wa kufuta
+                const canDelete = currentUser.role === 'admin' || authorId === currentUser.id || c.uId === currentUser.id;
+                
+                const delBtn = canDelete ? `<button onclick="appFeatures.deleteComment('${pId}', ${index})" style="color:var(--danger); background:none; border:none; font-size:1.1rem; cursor:pointer;">🗑️</button>` : '';
+                
                 l.innerHTML += `
-                <div class="comment-item" style="cursor:pointer; padding:8px 0; border-bottom:1px solid var(--border);" onclick="ui.hideModal('comment-modal'); appFeatures.viewUserProfile('${c.uId}')">
-                    <strong>${sanitize(c.username)} ${getVerifiedIcon(c.verified)}</strong>: <br>
-                    <span style="color:var(--text-muted); font-size:0.95rem;">${sanitize(c.text)}</span>
+                <div class="comment-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                    <div style="cursor:pointer; flex:1;" onclick="ui.hideModal('comment-modal'); appFeatures.viewUserProfile('${c.uId}')">
+                        <strong>${sanitize(c.username)} ${getVerifiedIcon(c.verified)}</strong>: <br>
+                        <span style="color:var(--text-muted); font-size:0.95rem;">${sanitize(c.text)}</span>
+                    </div>
+                    ${delBtn}
                 </div>`; 
             }); 
+        } else {
+            l.innerHTML = "<p style='text-align:center;'>Hakuna comments bado.</p>";
         }
         ui.showModal('comment-modal'); 
     },
-    
+
+    deleteComment: async (pId, cIndex) => {
+        if(!confirm("Futa comment hii?")) return;
+        
+        const pRef = doc(db, "posts", pId);
+        const snap = await getDoc(pRef);
+        
+        if(snap.exists()) {
+            let comments = snap.data().comments;
+            comments.splice(cIndex, 1); // Ondoa comment
+            await updateDoc(pRef, { comments: comments });
+            
+            // Re-render modal
+            appFeatures.openComments(pId);
+            ui.showToast('Comment imefutwa', 'success');
+        }
+    },
+
     addComment: async () => { 
         if(currentUser.isBlocked) return; 
         
@@ -440,7 +493,7 @@ window.appFeatures = {
         if(!text) return; 
         
         if(currentUser.role !== 'admin' && isSpamText(text)) {
-            return ui.showToast('No Links/Numbers', 'error');
+            return ui.showToast('Hauruhusiwi kuweka Link au Namba', 'error');
         }
         
         await updateDoc(doc(db, "posts", currentCommentPostId), { 
@@ -460,12 +513,14 @@ window.appFeatures = {
     renderProfile: () => { 
         document.getElementById('my-username').innerText = currentUser.username; 
         document.getElementById('my-verified').innerHTML = getVerifiedIcon(currentUser.verified); 
+        document.getElementById('my-premium').innerHTML = getPremiumIcon(currentUser.isPremium); 
         document.getElementById('my-bio').innerText = currentUser.bio || "No bio yet."; 
         document.getElementById('my-prof-pic').src = currentUser.pic || defaultAvatar; 
         document.getElementById('my-followers').innerText = (currentUser.followers ? currentUser.followers.length : 0) + (currentUser.fakeFollowers || 0); 
         document.getElementById('my-following').innerText = currentUser.following ? currentUser.following.length : 0; 
         document.getElementById('edit-user').value = currentUser.username; 
         document.getElementById('edit-bio').value = currentUser.bio || ""; 
+        
         appFeatures.loadProfilePosts('own'); 
     },
     
@@ -477,33 +532,67 @@ window.appFeatures = {
         
         document.getElementById('other-username').innerText = u.username; 
         document.getElementById('other-verified').innerHTML = getVerifiedIcon(u.verified); 
+        document.getElementById('other-premium').innerHTML = getPremiumIcon(u.isPremium); 
         document.getElementById('other-bio').innerText = u.bio || 'No bio yet.'; 
         document.getElementById('other-prof-pic').src = u.pic || defaultAvatar; 
         document.getElementById('other-followers').innerText = (u.followers ? u.followers.length : 0) + (u.fakeFollowers || 0); 
         document.getElementById('follow-btn').innerText = currentUser.following && currentUser.following.includes(uId) ? 'Following' : 'Follow'; 
         
-        const c = document.getElementById('other-profile-posts'); 
-        c.innerHTML = t('loading'); 
-        
-        const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc"))); 
-        c.innerHTML = '';
-        let found = false;
-
-        snap.forEach(d => { 
-            const p = {id: d.id, ...d.data()}; 
-            if(p.authorId === uId && p.status === 'approved') {
-                c.innerHTML += appFeatures.createPostHTML(p);
-                found = true;
-            } 
-        }); 
-
-        if(!found) {
-            c.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Hakuna posti alizoweka.</p>`;
+        // Setup Block button state
+        const bBtn = document.getElementById('user-block-btn');
+        if(currentUser.blockedUsers && currentUser.blockedUsers.includes(uId)) {
+            bBtn.innerText = "Mfungulie (Unblock)"; 
+            bBtn.style.color = "var(--success)"; 
+            bBtn.style.borderColor = "var(--success)";
+        } else {
+            bBtn.innerText = "🚫 Block"; 
+            bBtn.style.color = "var(--danger)"; 
+            bBtn.style.borderColor = "var(--danger)";
         }
 
+        const c = document.getElementById('other-profile-posts'); 
+        c.innerHTML = '<p style="text-align:center;">Inapakia...</p>'; 
+        
+        const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc"))); 
+        c.innerHTML = ''; 
+        let found = false;
+        
+        snap.forEach(d => { 
+            const p = {id: d.id, ...d.data()}; 
+            // Usioneshe posti za kuntu kwenye profile za watu wengine
+            if(p.authorId === uId && p.status === 'approved' && p.category !== 'Message Kuntu') { 
+                c.innerHTML += appFeatures.createPostHTML(p); 
+                found = true; 
+            } 
+        }); 
+        
+        if(!found) c.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Hakuna posti alizoweka.</p>`;
+        
         router.navigate('other-profile'); 
     },
-    
+
+    toggleBlockUser: async () => {
+        if(!viewingUserId) return;
+        const myRef = doc(db, "users", currentUser.id);
+        
+        if(!currentUser.blockedUsers) currentUser.blockedUsers = [];
+        
+        if(currentUser.blockedUsers.includes(viewingUserId)) {
+            // Unblock
+            currentUser.blockedUsers = currentUser.blockedUsers.filter(id => id !== viewingUserId);
+            await updateDoc(myRef, { blockedUsers: arrayRemove(viewingUserId) });
+            ui.showToast("Umemfungulia mtumiaji huyu.", "success");
+        } else {
+            // Block
+            currentUser.blockedUsers.push(viewingUserId);
+            await updateDoc(myRef, { blockedUsers: arrayUnion(viewingUserId) });
+            ui.showToast("Umemblock. Hutaona posti zake tena.", "info");
+        }
+        
+        localStorage.setItem('st_session', JSON.stringify(currentUser));
+        appFeatures.viewUserProfile(viewingUserId); // Refresh UI
+    },
+
     toggleFollow: async () => { 
         if(currentUser.isBlocked || !viewingUserId) return; 
         
@@ -520,7 +609,6 @@ window.appFeatures = {
             await updateDoc(myRef, { following: arrayUnion(viewingUserId) }); 
             await updateDoc(tarRef, { followers: arrayUnion(currentUser.id) }); 
             currentUser.following.push(viewingUserId); 
-            appFeatures.notify(viewingUserId, `${currentUser.username} started following you.`, 'user', currentUser.id); 
         } 
         
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
@@ -533,8 +621,7 @@ window.appFeatures = {
         if(!n) return; 
         
         await updateDoc(doc(db, "users", currentUser.id), { username: n, bio: b }); 
-        currentUser.username = n; 
-        currentUser.bio = b; 
+        currentUser.username = n; currentUser.bio = b; 
         
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
         ui.hideModal('edit-profile-modal'); 
@@ -553,7 +640,6 @@ window.appFeatures = {
                 const scale = 400/i.width; 
                 c.width = 400; 
                 c.height = i.height*scale; 
-                
                 const ctx = c.getContext('2d'); 
                 ctx.drawImage(i, 0,0,c.width,c.height); 
                 const b64 = c.toDataURL('image/jpeg', 0.6); 
@@ -573,20 +659,27 @@ window.appFeatures = {
         if(event && event.target) event.target.classList.add('active'); 
         
         const c = document.getElementById('profile-posts-container'); 
-        c.innerHTML = t('loading'); 
+        c.innerHTML = '<p style="text-align:center;">Inapakia...</p>'; 
         
         const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc"))); 
-        c.innerHTML = '';
+        c.innerHTML = ''; 
         let found = false;
-
+        const blocked = currentUser.blockedUsers || [];
+        
         snap.forEach(d => { 
             const p = {id: d.id, ...d.data()}; 
-            if(p.status === 'approved' && ((type==='own'&&p.authorId===currentUser.id) || (type==='liked'&&p.likes&&p.likes.includes(currentUser.id)) || (type==='saved'&&currentUser.saved&&currentUser.saved.includes(p.id)))) {
-                c.innerHTML += appFeatures.createPostHTML(p); 
-                found = true;
+            
+            // Kama ni Kuntu, isionekane kwenye public lists (ila kwenye feed yake tu)
+            if(p.category === 'Message Kuntu') return;
+
+            if(p.status === 'approved' && !blocked.includes(p.authorId)) {
+                if((type==='own' && p.authorId===currentUser.id) || (type==='liked' && p.likes && p.likes.includes(currentUser.id)) || (type==='saved' && currentUser.saved && currentUser.saved.includes(p.id))) {
+                    c.innerHTML += appFeatures.createPostHTML(p); 
+                    found = true;
+                }
             }
         }); 
-
+        
         if(!found) {
             c.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Hakuna posti zilizopatikana.</p>`;
         }
@@ -595,101 +688,31 @@ window.appFeatures = {
     search: async () => { 
         const qT = document.getElementById('search-input').value.toLowerCase(); 
         const r = document.getElementById('search-results'); 
+        if(!qT){ r.innerHTML = ''; return; } 
         
-        if(!qT){ 
-            r.innerHTML = ''; 
-            return; 
-        } 
         r.innerHTML = ''; 
+        const blocked = currentUser.blockedUsers || []; 
         
         const uS = await getDocs(collection(db, "users")); 
         uS.forEach(d => { 
-            if(d.data().username.toLowerCase().includes(qT)) {
+            if(d.data().username.toLowerCase().includes(qT) && !blocked.includes(d.id)) { 
                 r.innerHTML += `
                 <div class="card" style="display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="appFeatures.viewUserProfile('${d.id}')">
-                    <img src="${d.data().pic || defaultAvatar}" class="avatar" style="width:30px; height:30px;">
-                    <strong>${sanitize(d.data().username)} ${getVerifiedIcon(d.data().verified)}</strong>
+                    <img src="${d.data().pic || defaultAvatar}" class="avatar" style="width:40px; height:40px;">
+                    <div>
+                        <strong>${sanitize(d.data().username)} ${getVerifiedIcon(d.data().verified)}</strong>
+                    </div>
                 </div>`; 
-            }
+            } 
         }); 
         
         const pS = await getDocs(query(collection(db, "posts"), where("status", "==", "approved"))); 
         pS.forEach(d => { 
             const p = {id: d.id, ...d.data()}; 
-            if(p.text.toLowerCase().includes(qT)) {
+            if(p.text.toLowerCase().includes(qT) && p.category !== 'Message Kuntu' && !blocked.includes(p.authorId)) { 
                 r.innerHTML += appFeatures.createPostHTML(p); 
-            }
-        }); 
-    },
-    
-    renderAnnouncementsToFeed: async () => { 
-        const snap = await getDocs(query(collection(db, "announcements"), orderBy("time", "desc"))); 
-        const m = document.getElementById('announcement-marquee'); 
-        const b = document.getElementById('announcement-bar'); 
-        let t = []; 
-        
-        snap.forEach(d => { 
-            if(Date.now() - d.data().time < 86400000) t.push(d.data().text); 
-        }); 
-        
-        if(t.length > 0){ 
-            b.style.display='block'; 
-            m.innerText = "📢 "+t.join(" | 📢 "); 
-        } else {
-            b.style.display='none'; 
-        }
-    },
-    
-    notify: async (toId, text, type = 'none', linkId = null) => { 
-        await addDoc(collection(db, "notifications"), { to: toId, text: text, time: Date.now(), read: false, type: type, linkId: linkId }); 
-    },
-    
-    deleteNotification: async (notifId) => { 
-        await deleteDoc(doc(db, "notifications", notifId)); 
-        ui.showToast('Deleted', 'success'); 
-    },
-    
-    renderNotifications: () => { 
-        onSnapshot(query(collection(db, "notifications"), orderBy("time", "desc")), (snap) => { 
-            const c = document.getElementById('notify-container'); 
-            c.innerHTML = ''; 
-            let unread = 0; 
-            
-            snap.forEach(d => { 
-                const n = {id: d.id, ...d.data()}; 
-                if(n.to === currentUser.id) { 
-                    if(!n.read) unread++; 
-                    c.innerHTML += `
-                    <div class="card" style="opacity:${n.read?'0.7':'1'}">
-                        <div onclick="appFeatures.handleNotificationClick('${n.type}', '${n.linkId}', '${n.id}')" style="cursor:pointer;">
-                            ${sanitize(n.text)} <br>
-                            <small style="color:var(--text-muted);">${timeAgo(n.time)}</small>
-                        </div>
-                        <button class="btn-outline mt-1" style="color:var(--danger);" onclick="appFeatures.deleteNotification('${n.id}')">Futa</button>
-                    </div>`; 
-                } 
-            }); 
-            
-            const b = document.getElementById('notif-badge'); 
-            if(b) { 
-                b.style.display = unread > 0 ? 'block' : 'none'; 
-                b.innerText = unread; 
             } 
         }); 
-    },
-    
-    handleNotificationClick: async (type, linkId, notifId) => { 
-        await updateDoc(doc(db, "notifications", notifId), { read: true }); 
-        
-        if(type === 'user' && linkId) {
-            appFeatures.viewUserProfile(linkId); 
-        } else if(type === 'post' && linkId) { 
-            const s = await getDoc(doc(db, "posts", linkId)); 
-            if(s.exists()) { 
-                document.getElementById('single-post-container').innerHTML = appFeatures.createPostHTML({id: s.id, ...s.data()}); 
-                router.navigate('single-post'); 
-            } 
-        } 
     },
     
     openSettings: () => { 
@@ -702,138 +725,94 @@ window.appFeatures = {
         if(tInput) { 
             await addDoc(collection(db, "reports"), { uId: currentUser.id, username: currentUser.username, text: tInput, time: Date.now(), adminReply: null }); 
             ui.hideModal('bug-modal'); 
-            ui.showToast('Report submitted.', 'success'); 
-        } 
-    }, 
-    
-    renderMyReports: async () => { 
-        const l = document.getElementById('my-reports-list'); 
-        l.innerHTML = ''; 
-        const s = await getDocs(query(collection(db, "reports"), orderBy("time", "desc"))); 
-        
-        s.forEach(d => { 
-            const r = d.data(); 
-            if(r.uId === currentUser.id) {
-                l.innerHTML += `
-                <div class="card">
-                    <small style="color:var(--text-muted);">${timeAgo(r.time)}</small>
-                    <p style="margin-top:10px;">${sanitize(r.text)}</p>
-                    ${r.adminReply ? `<div style="background:var(--secondary); color:#fff; padding:10px; border-radius:8px; margin-top:10px;">Admin: ${sanitize(r.adminReply)}</div>` : '<div style="color:var(--text-muted); font-size:0.8rem; margin-top:10px;">Pending Review</div>'}
-                </div>`; 
-            }
-        }); 
-        router.navigate('my-reports'); 
-    }, 
-    
-    submitAppeal: async () => { 
-        const text = document.getElementById('appeal-text').value.trim(); 
-        if(text) { 
-            await addDoc(collection(db, "appeals"), { uId: currentUser.id, username: currentUser.username, text: text, time: Date.now() }); 
-            ui.hideModal('appeal-modal'); 
-            ui.showToast('Appeal sent', 'success'); 
+            ui.showToast('Ripoti imetumwa kikamilifu.', 'success'); 
         } 
     }
 };
 
-// MUONEKANO MZURI WA ADMIN PANEL NA KADI ZILIZOPANGILIWA
 window.appAdmin = {
-    toggleAutoApprove: async () => {
-        const newVal = !window.systemSettings.autoApprove;
-        await setDoc(doc(db, "system", "app_settings"), { autoApprove: newVal }, { merge: true });
-        ui.showToast(`Auto Approve turned ${newVal ? 'ON' : 'OFF'}`, 'success');
+    toggleAutoApprove: async () => { 
+        const newVal = !window.systemSettings.autoApprove; 
+        await setDoc(doc(db, "system", "app_settings"), { autoApprove: newVal }, { merge: true }); 
+        ui.showToast(`Auto Approve imekuwa ${newVal ? 'ON' : 'OFF'}`, 'success'); 
     },
     
-    addFakeLikes: async (postId, currentFake) => {
-        const amount = prompt("Enter number of likes to add:", "100");
+    addFakeLikes: async (postId, currentFake) => { 
+        const amount = prompt("Weka idadi ya likes:", "100"); 
         if(amount) { 
             await updateDoc(doc(db, "posts", postId), { fakeLikes: currentFake + parseInt(amount) }); 
-            ui.showToast('Added likes', 'success'); 
+            ui.showToast('Zimeongezwa', 'success'); 
             appFeatures.renderFeed(); 
-        }
+        } 
     },
     
-    changeCategory: async (postId) => {
-        const newCat = prompt(`Enter category name:`);
+    changeCategory: async (postId) => { 
+        const newCat = prompt(`Badilisha Kundi (Category):`); 
         if(newCat) { 
             await updateDoc(doc(db, "posts", postId), { category: newCat }); 
-            ui.showToast('Category updated', 'success'); 
-        }
+            ui.showToast('Kundi limebadilishwa', 'success'); 
+        } 
     },
     
-    renderPending: async () => {
+    renderPending: async () => { 
         const area = document.getElementById('admin-content-area'); 
-        area.innerHTML = '<h4>Pending Posts</h4>';
-        const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc")));
+        area.innerHTML = '<h4>Posti Zinasubiri Ukaguzi</h4>'; 
+        const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc"))); 
         snap.forEach(d => { 
             const p = { id: d.id, ...d.data() }; 
             if(p.status === 'pending') area.innerHTML += appFeatures.createPostHTML(p, 'admin_queue'); 
-        });
+        }); 
     },
     
     moderatePost: async (postId, status) => { 
         await updateDoc(doc(db, "posts", postId), { status: status }); 
-        ui.showToast(`Post ${status}`, 'success'); 
+        ui.showToast(`Posti ${status === 'approved' ? 'Imeruhusiwa' : 'Imekataliwa'}`, 'success'); 
         appAdmin.renderPending(); 
     },
     
     renderUsers: async () => {
         const area = document.getElementById('admin-content-area'); 
-        area.innerHTML = '<h4>Manage Users</h4>';
-        
+        area.innerHTML = '<h4>Udhibiti wa Watumiaji</h4>';
         const snap = await getDocs(collection(db, "users"));
         
         snap.forEach(docSnap => {
             const u = { id: docSnap.id, ...docSnap.data() };
             
-            let tools = '';
-            tools += `<button onclick="appAdmin.toggleVerify('${u.id}', ${u.verified})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">${u.verified ? 'Unverify' : 'Verify'}</button> `;
-            tools += `<button onclick="appAdmin.addFakeFollowers('${u.id}', ${u.fakeFollowers || 0})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">+ Followers</button> `;
+            let tools = `
+            <button onclick="appAdmin.toggleVerify('${u.id}', ${u.verified})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">
+                ${u.verified ? 'Toa Verify' : 'Verify'}
+            </button> 
+            <button onclick="appAdmin.addFakeFollowers('${u.id}', ${u.fakeFollowers || 0})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">
+                + Followers
+            </button>`;
             
             if (u.id !== currentUser.id) {
-                const blockColor = u.isBlocked ? 'var(--success)' : 'var(--danger)';
-                const blockText = u.isBlocked ? 'Unblock' : 'Block';
-                tools += `<button onclick="appAdmin.toggleBlock('${u.id}', ${u.isBlocked})" class="btn-outline" style="color:${blockColor}; border-color:${blockColor}; padding:6px 12px; font-size:0.8rem;">${blockText}</button> `;
-                tools += `<button onclick="appAdmin.deleteUser('${u.id}')" class="btn-outline" style="color:var(--text-muted); padding:6px 12px; font-size:0.8rem;">Delete</button> `;
+                tools += `
+                <button onclick="appAdmin.toggleBlock('${u.id}', ${u.isBlocked})" class="btn-outline" style="color:${u.isBlocked?'var(--success)':'var(--danger)'}; border-color:${u.isBlocked?'var(--success)':'var(--danger)'}; padding:6px 12px; font-size:0.8rem;">
+                    ${u.isBlocked?'Fungulia':'Block'}
+                </button> 
+                <button onclick="appAdmin.deleteUser('${u.id}')" class="btn-outline" style="color:var(--text-muted); padding:6px 12px; font-size:0.8rem;">
+                    Futa (Delete)
+                </button>`;
             }
             
-            const blockedTag = u.isBlocked ? `<span class="badge" style="position:static; background:var(--danger)">Blocked</span>` : '';
-            const folCount = u.followers ? u.followers.length : 0;
-
-            // Muonekano Mpya na Mzuri zaidi kwa Kadi za Admin
             area.innerHTML += `
-            <div class="card" style="padding:15px; margin-bottom:15px; display:flex; flex-direction:column; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    
-                    <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="appFeatures.viewUserProfile('${u.id}')">
-                        <img src="${u.pic || defaultAvatar}" class="avatar" style="width:45px; height:45px; border-radius:50%; object-fit:cover;">
-                        <div>
-                            <strong style="font-size:1.1rem; display:flex; align-items:center;">${sanitize(u.username)} ${getVerifiedIcon(u.verified)}</strong>
-                            <div style="font-size:0.8rem; color:var(--text-muted);">${sanitize(u.email)}</div>
-                        </div>
+            <div class="card" style="padding:15px; margin-bottom:15px; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="appFeatures.viewUserProfile('${u.id}')">
+                    <img src="${u.pic || defaultAvatar}" class="avatar" style="width:45px; height:45px;">
+                    <div>
+                        <strong style="font-size:1.1rem;">${sanitize(u.username)} ${getVerifiedIcon(u.verified)} ${getPremiumIcon(u.isPremium)}</strong>
+                        <div style="font-size:0.8rem; color:var(--text-muted)">${sanitize(u.email)}</div>
                     </div>
-
-                    <div style="text-align:right;">
-                        ${blockedTag} 
-                        <span class="badge" style="position:static; background:var(--text-muted)">${u.role}</span>
-                    </div>
-
                 </div>
-
-                <div style="font-size:0.85rem; color:var(--text-muted); background:var(--bg-color); padding:10px; border-radius:8px; display:flex; justify-content:space-around;">
-                    <span>Real Fol: <strong style="color:var(--text-main);">${folCount}</strong></span>
-                    <span>Added: <strong style="color:var(--primary);">${u.fakeFollowers || 0}</strong></span>
-                </div>
-
-                <div style="display:flex; flex-wrap:wrap; gap:8px;">
-                    ${tools}
-                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">${tools}</div>
             </div>`;
         });
     },
     
     toggleVerify: async (userId, currentStatus) => { 
         await updateDoc(doc(db, "users", userId), { verified: !currentStatus }); 
-        ui.showToast('Verified updated', 'success'); 
+        ui.showToast('Imesasishwa', 'success'); 
         appAdmin.renderUsers(); 
     },
     
@@ -841,131 +820,131 @@ window.appAdmin = {
         const amount = prompt("Add followers:", "1000"); 
         if(amount) { 
             await updateDoc(doc(db, "users", userId), { fakeFollowers: currentFake + parseInt(amount) }); 
-            ui.showToast('Added followers', 'success'); 
+            ui.showToast('Zimeongezwa', 'success'); 
             appAdmin.renderUsers(); 
         } 
     },
     
     toggleBlock: async (userId, currentStatus) => { 
         await updateDoc(doc(db, "users", userId), { isBlocked: !currentStatus }); 
-        ui.showToast('Block status updated', 'success'); 
+        ui.showToast('Block status imebadilika', 'success'); 
         appAdmin.renderUsers(); 
     },
     
     deleteUser: async (userId) => { 
-        if(confirm("Delete user?")) { 
+        if(confirm("Delete user? Hutaweza kurudisha taarifa zake.")) { 
             await deleteDoc(doc(db, "users", userId)); 
-            ui.showToast("User deleted", "success"); 
+            ui.showToast("Amefutwa kabisa", "success"); 
             appAdmin.renderUsers(); 
         } 
     },
     
-    renderReports: async () => {
+    // ADMIN DASHBOARD YA PREMIUM REQUESTS
+    renderPremiumReq: async () => {
         const area = document.getElementById('admin-content-area'); 
-        area.innerHTML = '<h4>User Reports</h4>';
+        area.innerHTML = '<h4 style="color:#d4af37;">🌟 Maombi ya VIP (Message Kuntu)</h4>';
         
-        const snap = await getDocs(query(collection(db, "reports"), orderBy("time", "desc")));
-        snap.forEach(d => { 
-            const r = { id: d.id, ...d.data() }; 
-            area.innerHTML += `
-            <div class="card" style="margin-bottom:15px;">
-                <strong style="color:var(--primary);">${sanitize(r.username)}</strong>
-                <p style="margin:10px 0; background:var(--bg-color); padding:10px; border-radius:8px;">${sanitize(r.text)}</p>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-outline" onclick="appAdmin.replyReport('${r.id}', '${r.uId}')">Reply</button> 
-                    <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.deleteReport('${r.id}')">Dismiss</button>
-                </div>
-            </div>`; 
+        const snap = await getDocs(query(collection(db, "premium_requests"), orderBy("timestamp", "desc")));
+        let found = false;
+        
+        snap.forEach(d => {
+            const req = { id: d.id, ...d.data() };
+            if(req.status === 'pending') {
+                found = true;
+                area.innerHTML += `
+                <div class="card" style="border: 2px solid #d4af37;">
+                    <strong>User:</strong> ${sanitize(req.username)}<br>
+                    <strong>Muamala/Jina:</strong> <span style="color:var(--primary); font-size:1.1rem;">${sanitize(req.transaction)}</span><br>
+                    <small style="color:var(--text-muted);">${timeAgo(req.timestamp)}</small>
+                    <div class="mt-1" style="display:flex; gap:10px;">
+                        <button class="btn-primary" style="background:var(--success);" onclick="appAdmin.resolvePremium('${req.id}', '${req.uId}', true)">✅ Mpe VIP</button>
+                        <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.resolvePremium('${req.id}', '${req.uId}', false)">❌ Kataa</button>
+                    </div>
+                </div>`;
+            }
         });
-    },
-    
-    replyReport: async (reportId, userId) => { 
-        const reply = prompt("Enter reply:"); 
-        if(reply) { 
-            await updateDoc(doc(db, "reports", reportId), { adminReply: reply }); 
-            ui.showToast('Reply sent', 'success'); 
-            appAdmin.renderReports(); 
-        } 
-    },
-    
-    deleteReport: async (id) => { 
-        await deleteDoc(doc(db, "reports", id)); 
-        ui.showToast('Report dismissed', 'success'); 
-        appAdmin.renderReports(); 
-    },
-    
-    renderAppeals: async () => {
-        const area = document.getElementById('admin-content-area'); 
-        area.innerHTML = '<h4>Appeals</h4>';
-        const snap = await getDocs(query(collection(db, "appeals"), orderBy("time", "desc")));
         
-        snap.forEach(d => { 
-            const app = { id: d.id, ...d.data() }; 
-            area.innerHTML += `
-            <div class="card" style="margin-bottom:15px;">
-                <strong style="color:var(--primary);">${sanitize(app.username)}</strong>
-                <p style="margin:10px 0; background:var(--bg-color); padding:10px; border-radius:8px;">${sanitize(app.text)}</p>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-outline" style="color:var(--success); border-color:var(--success);" onclick="appAdmin.resolveAppeal('${app.id}', '${app.uId}', true)">Unblock</button> 
-                    <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.resolveAppeal('${app.id}', '${app.uId}', false)">Reject</button>
-                </div>
-            </div>`; 
+        if(!found) area.innerHTML += '<p style="text-align:center;">Hakuna maombi mapya kwa sasa.</p>';
+    },
+    
+    resolvePremium: async (reqId, userId, approve) => {
+        if(approve) { 
+            await updateDoc(doc(db, "users", userId), { isPremium: true }); 
+        }
+        await updateDoc(doc(db, "premium_requests", reqId), { status: approve ? 'approved' : 'rejected' });
+        ui.showToast(approve ? 'Amekuwa VIP Kikamilifu' : 'Ombi Limekataliwa', 'success'); 
+        appAdmin.renderPremiumReq();
+    },
+
+    // PAYMENT SETTINGS (Kuedit Namba za Kulipia na Bei)
+    renderPaymentSettings: () => {
+        const area = document.getElementById('admin-content-area');
+        let html = `<h4>Payment Methods (VIP)</h4>
+        <div style="margin-bottom:15px;">
+            <strong>VIP Price (Tsh):</strong> 
+            <input type="number" id="admin-vip-price" value="${window.systemSettings.premiumPrice}" style="width:100px; display:inline-block; margin:0 10px;"> 
+            <button class="btn-outline" onclick="appAdmin.saveVipPrice()">Hifadhi Bei</button>
+        </div>
+        
+        <h5 style="margin-bottom:10px;">Namba za Malipo Zilizopo:</h5>
+        <div id="pay-methods-list">`;
+        
+        window.systemSettings.paymentMethods.forEach((pm, index) => {
+            html += `
+            <div class="card" style="padding:10px; margin-bottom:10px;">
+                <strong>${sanitize(pm.network)}</strong>: ${sanitize(pm.number)} (${sanitize(pm.name)}) 
+                <button class="btn-outline" style="float:right; padding:4px 10px; color:var(--danger); border-color:var(--danger);" onclick="appAdmin.deletePaymentMethod(${index})">Futa</button>
+            </div>`;
         });
-    },
-    
-    resolveAppeal: async (appealId, userId, unblock) => { 
-        if(unblock) await updateDoc(doc(db, "users", userId), { isBlocked: false }); 
-        await deleteDoc(doc(db, "appeals", appealId)); 
-        ui.showToast(unblock ? 'Unblocked' : 'Rejected', 'success'); 
-        appAdmin.renderAppeals(); 
-    },
-    
-    renderAnnouncements: async () => {
-        const area = document.getElementById('admin-content-area'); 
-        area.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h4>Announcements</h4>
-                <button class="btn-primary" style="width:auto; padding:8px 15px;" onclick="ui.showModal('announcement-modal')">+ New</button>
-            </div>
-            <div id="ann-list"></div>
-        `;
         
-        const list = document.getElementById('ann-list'); 
-        const snap = await getDocs(query(collection(db, "announcements"), orderBy("time", "desc")));
+        html += `
+        </div>
+        <div class="card" style="padding:15px; margin-top:20px; background:var(--bg-color);">
+            <h6>Ongeza Namba Mpya</h6>
+            <input type="text" id="new-pm-net" placeholder="Mtandao (Mf. Vodacom, Tigo)">
+            <input type="text" id="new-pm-num" placeholder="Namba ya Simu">
+            <input type="text" id="new-pm-name" placeholder="Jina la Usajili">
+            <button class="btn-primary" onclick="appAdmin.addPaymentMethod()">Add Network</button>
+        </div>`;
         
-        snap.forEach(d => { 
-            const a = { id: d.id, ...d.data() }; 
-            list.innerHTML += `
-            <div class="card" style="border-left:4px solid var(--primary); margin-bottom:10px;">
-                <p style="margin-bottom:10px;">${sanitize(a.text)}</p>
-                <button class="btn-outline" style="color:var(--danger); border-color:var(--danger); padding:5px 10px; font-size:0.8rem;" onclick="appAdmin.deleteAnnouncement('${a.id}')">Delete</button>
-            </div>`; 
-        });
+        area.innerHTML = html;
     },
     
-    deleteAnnouncement: async (id) => { 
-        if(confirm("Delete?")) { 
-            await deleteDoc(doc(db, "announcements", id)); 
-            ui.showToast("Deleted", "success"); 
-            appAdmin.renderAnnouncements(); 
-        } 
+    saveVipPrice: async () => {
+        const p = document.getElementById('admin-vip-price').value;
+        await setDoc(doc(db, "system", "app_settings"), { premiumPrice: p }, { merge: true });
+        window.systemSettings.premiumPrice = p; 
+        ui.showToast('Bei imebadilika kikamilifu', 'success');
     },
     
-    postAnnouncement: async () => { 
-        const text = document.getElementById('announcement-text').value.trim(); 
-        if(text) { 
-            await addDoc(collection(db, "announcements"), { text: text, time: Date.now() }); 
-            ui.hideModal('announcement-modal'); 
-            ui.showToast('Sent!', 'success'); 
-            appAdmin.renderAnnouncements(); 
-        } 
+    addPaymentMethod: async () => {
+        const net = document.getElementById('new-pm-net').value.trim(); 
+        const num = document.getElementById('new-pm-num').value.trim(); 
+        const name = document.getElementById('new-pm-name').value.trim();
+        
+        if(net && num && name) {
+            window.systemSettings.paymentMethods.push({network: net, number: num, name: name});
+            await setDoc(doc(db, "system", "app_settings"), { paymentMethods: window.systemSettings.paymentMethods }, { merge: true });
+            appAdmin.renderPaymentSettings(); 
+            ui.showToast('Namba imeongezwa', 'success');
+        } else {
+            ui.showToast('Jaza taarifa zote', 'error');
+        }
+    },
+    
+    deletePaymentMethod: async (index) => {
+        if(confirm('Uhakika unataka kufuta namba hii?')) {
+            window.systemSettings.paymentMethods.splice(index, 1);
+            await setDoc(doc(db, "system", "app_settings"), { paymentMethods: window.systemSettings.paymentMethods }, { merge: true });
+            appAdmin.renderPaymentSettings(); 
+            ui.showToast('Namba imefutwa', 'success');
+        }
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     if(localStorage.getItem('st_theme') === 'dark') document.body.classList.add('dark');
     
-    // Uki-view profile kutokea kwenye chat, mfumo unarudi hapa kuifungua
     const viewUser = localStorage.getItem('st_view_user');
     
     if(currentUser) {
@@ -974,17 +953,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(currentUser.role === 'admin') {
             document.getElementById('admin-btn').style.display = 'block';
+            document.getElementById('opt-premium').style.display = 'block'; // Onyesha VIP option kwenye create post
         }
         
         appFeatures.renderFeed(); 
-        appFeatures.renderAnnouncementsToFeed(); 
-        
         setInterval(ui.createFallingHeart, 1500); 
+        
+        // CHECK MESEJI ZA CHAT ZILIZOPO
         checkNewMessages();
         
         onSnapshot(doc(db, "system", "app_settings"), (snap) => {
             if(snap.exists()) {
-                window.systemSettings = snap.data();
+                const data = snap.data();
+                window.systemSettings.autoApprove = data.autoApprove || false;
+                if(data.premiumPrice) window.systemSettings.premiumPrice = data.premiumPrice;
+                if(data.paymentMethods) window.systemSettings.paymentMethods = data.paymentMethods;
+                
                 const stText = document.getElementById('auto-app-status-text');
                 if(stText) { 
                     stText.innerText = window.systemSettings.autoApprove ? 'ON' : 'OFF'; 
