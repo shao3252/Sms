@@ -159,6 +159,14 @@
                 <div id="other-profile-posts"></div>
             </div>
 
+            <div id="view-my-reports" class="view">
+                <div class="profile-header card">
+                    <button class="btn-outline" style="position:absolute; top:15px; left:15px; padding:5px 10px;" onclick="router.navigate('profile')">🔙</button>
+                    <h2 style="margin-top:20px;" data-i18n="myReportsBtn">Ripoti Zangu</h2>
+                </div>
+                <div id="my-reports-list"></div>
+            </div>
+
             <div id="view-admin" class="view">
                 <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('profile')">🔙</button>
                 <h3 style="margin-bottom: 15px;">Admin Dashboard</h3>
@@ -175,7 +183,9 @@
                     <button class="btn-outline" style="border-color:#d4af37; color:#d4af37;" onclick="appAdmin.renderPremiumReq()">VIP Requests</button>
                     <button class="btn-outline" style="border-color:var(--success); color:var(--success);" onclick="appAdmin.renderPaymentSettings()">Pay Settings</button>
                     <button class="btn-outline" onclick="appAdmin.renderAnnouncements()">Announcements</button>
-                    <button class="btn-outline" onclick="appAdmin.renderReports()">Bug Reports</button>
+                    
+                    <button class="btn-outline" style="border-color:var(--danger); color:var(--danger); font-weight:bold;" onclick="appAdmin.renderReports()">🐞 Bug Reports</button>
+                    
                     <button class="btn-outline" onclick="appAdmin.renderAppeals()" style="grid-column: span 2; border-color:var(--primary); color:var(--primary);">Block Appeals</button>
                 </div>
                 
