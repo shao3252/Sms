@@ -56,7 +56,8 @@ const translations = {
         approve: "Ruhusu",
         reject: "Kataa",
         share: "Shiriki",
-        deletePost: "Futa Posti",
+        deletePost: "Futa",
+        editPost: "✏️ Edit",
         editCat: "✏️ Kundi",
         addLikes: "+ Likes",
         noPosts: "Hakuna posti kwenye kundi hili.",
@@ -105,7 +106,8 @@ const translations = {
         approve: "Approve",
         reject: "Reject",
         share: "Share",
-        deletePost: "Delete Post",
+        deletePost: "Delete",
+        editPost: "✏️ Edit",
         editCat: "✏️ Edit Cat",
         addLikes: "+ Likes",
         noPosts: "No posts found in this category.",
@@ -275,24 +277,52 @@ window.appFeatures = {
         if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
         return { username: 'Unknown', pic: '', verified: false, followers: [], following: [] };
     },
+
+    // FIX 1: PULL FRESH DB DATA BEFORE POSTING SO VERIFIED BADGE IS PERFECT
     createPost: async () => {
         if(currentUser.isBlocked) return ui.showToast('Account Restricted!', 'error');
         const text = document.getElementById('post-text').value.trim();
         const cat = document.getElementById('post-category').value;
         if(!text || !cat) return ui.showToast('Select Category & Type Text', 'error');
 
+        const userSnap = await getDoc(doc(db, "users", currentUser.id));
+        const freshUser = userSnap.data();
+
         await addDoc(collection(db, "posts"), {
-            authorId: currentUser.id, authorName: currentUser.username, authorPic: currentUser.pic || "",
-            authorVerified: currentUser.verified || false, text: text, category: cat,
-            status: currentUser.role === 'admin' ? 'approved' : 'pending',
+            authorId: currentUser.id, authorName: freshUser.username, authorPic: freshUser.pic || "",
+            authorVerified: freshUser.verified || false, text: text, category: cat,
+            status: freshUser.role === 'admin' ? 'approved' : 'pending',
             timestamp: Date.now(), likes: [], comments: [], fakeLikes: 0
         });
         
-        ui.showToast(currentUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
+        ui.showToast(freshUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
         document.getElementById('post-text').value = '';
         document.getElementById('post-category').value = '';
         router.navigate('home');
     },
+
+    // FIX 3: EDIT ANY POST FUNCTION
+    editPost: async (postId) => {
+        const postRef = doc(db, "posts", postId);
+        const snap = await getDoc(postRef);
+        if(!snap.exists()) return;
+        
+        const oldText = snap.data().text;
+        const newText = prompt("Edit text:", oldText);
+        
+        if(newText !== null && newText.trim() !== "") {
+            await updateDoc(postRef, { text: newText.trim() });
+            ui.showToast('Post updated successfully', 'success');
+            
+            // Refresh view
+            if(document.getElementById('view-home').classList.contains('active')) appFeatures.renderFeed();
+            if(document.getElementById('view-single-post').classList.contains('active')) {
+                const updatedSnap = await getDoc(postRef);
+                document.getElementById('single-post-container').innerHTML = appFeatures.createPostHTML({ id: updatedSnap.id, ...updatedSnap.data() });
+            }
+        }
+    },
+
     createPostHTML: (post, context = 'feed') => {
         const isLiked = post.likes && post.likes.includes(currentUser.id);
         const isSaved = currentUser.saved && currentUser.saved.includes(post.id);
@@ -335,9 +365,11 @@ window.appFeatures = {
             
             if (isOwner || isAdmin) {
                 let extraAdminBtn = isAdmin ? `<button class="action-btn" style="display:inline; color:var(--secondary); margin-right:15px; font-weight:bold;" onclick="appAdmin.addFakeLikes('${post.id}', ${post.fakeLikes || 0})">${t('addLikes')}</button>` : '';
-                
+                let editBtn = `<button class="action-btn" style="display:inline; color:var(--primary); margin-right:15px; font-weight:bold;" onclick="appFeatures.editPost('${post.id}')">${t('editPost')}</button>`;
+
                 html += `<div class="mt-1" style="text-align:right;">
                     ${extraAdminBtn}
+                    ${editBtn}
                     <button class="action-btn" style="display:inline; color:var(--danger)" onclick="appFeatures.deletePost('${post.id}')">${t('deletePost')}</button>
                 </div>`;
             }
@@ -352,8 +384,6 @@ window.appFeatures = {
         onSnapshot(q, (snap) => {
             const container = document.getElementById('feed-container');
             container.innerHTML = '';
-            
-            if(currentFeedCategory === 'All') appFeatures.renderAnnouncementsToFeed(container);
 
             let hasPosts = false;
             snap.forEach(docSnap => {
@@ -372,21 +402,31 @@ window.appFeatures = {
         });
     },
 
-    renderAnnouncementsToFeed: async (container) => {
-        const q = query(collection(db, "announcements"));
+    // FIX 2: ANNOUNCEMENT MARQUEE ANIMATION
+    renderAnnouncementsToFeed: async () => {
+        const q = query(collection(db, "announcements"), orderBy("time", "desc"));
         const snap = await getDocs(q);
         const now = Date.now();
+        
+        let texts = [];
         snap.forEach(docSnap => {
             const a = docSnap.data();
-            if ((now - a.time) < 86400000) {
-                container.innerHTML += `<div class="card" style="border-left: 4px solid var(--primary); background: var(--nav-bg);">
-                    <strong style="color:var(--primary)">📢 Announcement</strong><br>
-                    <small>${timeAgo(a.time)}</small>
-                    <p class="mt-1">${sanitize(a.text)}</p>
-                </div>`;
+            if ((now - a.time) < 86400000) { // Active for 24 hrs
+                texts.push(sanitize(a.text));
             }
         });
+        
+        const bar = document.getElementById('announcement-bar');
+        const marquee = document.getElementById('announcement-text');
+        
+        if(texts.length > 0) {
+            bar.style.display = 'block';
+            marquee.innerText = "📢 " + texts.join(" ⭐️ ");
+        } else {
+            bar.style.display = 'none';
+        }
     },
+
     filterFeed: (cat) => {
         currentFeedCategory = cat;
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
@@ -430,6 +470,7 @@ window.appFeatures = {
         if(!confirm("Are you sure you want to delete this post?")) return;
         await deleteDoc(doc(db, "posts", postId));
         ui.showToast('Post deleted', 'success');
+        if(document.getElementById('view-single-post').classList.contains('active')) router.navigate('home');
     },
     openComments: async (postId) => {
         currentCommentPostId = postId;
@@ -560,6 +601,7 @@ window.appFeatures = {
         appFeatures.renderProfile();
     },
 
+    // FIX 4: UPDATE ALL PAST POSTS WHEN PICTURE CHANGES
     updateProfilePic: (e) => {
         const file = e.target.files[0]; if (!file) return;
         ui.showToast('Compressing and uploading image...', 'info');
@@ -582,6 +624,14 @@ window.appFeatures = {
                     await updateDoc(doc(db, "users", currentUser.id), { pic: base64Compressed });
                     currentUser.pic = base64Compressed;
                     localStorage.setItem('st_session', JSON.stringify(currentUser));
+                    
+                    // UPDATE PAST POSTS PICS
+                    const postsQuery = query(collection(db, "posts"), where("authorId", "==", currentUser.id));
+                    const postsSnap = await getDocs(postsQuery);
+                    postsSnap.forEach(async (docSnap) => {
+                        await updateDoc(doc(db, "posts", docSnap.id), { authorPic: base64Compressed });
+                    });
+
                     appFeatures.renderProfile(); 
                     ui.showToast('Profile photo updated successfully!', 'success');
                 } catch(error) {
@@ -693,6 +743,8 @@ window.appFeatures = {
             if (unread > 0) { b.style.display = 'block'; b.innerText = unread; } else { b.style.display = 'none'; }
         });
     },
+
+    // FIX 5: NOTIFICATION ROUTING
     handleNotificationClick: async (type, linkId, notifId) => {
         await updateDoc(doc(db, "notifications", notifId), { read: true });
         
@@ -701,7 +753,10 @@ window.appFeatures = {
         } else if (type === 'post' && linkId) {
             const postSnap = await getDoc(doc(db, "posts", linkId));
             if(!postSnap.exists()) return ui.showToast('Post no longer exists.', 'error');
-            document.getElementById('single-post-container').innerHTML = appFeatures.createPostHTML({ id: postSnap.id, ...postSnap.data() });
+            
+            // Generate HTML directly and switch view
+            const postHTML = appFeatures.createPostHTML({ id: postSnap.id, ...postSnap.data() });
+            document.getElementById('single-post-container').innerHTML = postHTML;
             router.navigate('single-post');
         } else if (type === 'report') {
             appFeatures.renderMyReports();
@@ -838,15 +893,10 @@ window.appAdmin = {
             </div>`;
         });
     },
-
-    // --- SEHEMU ILIYOFANYIWA MAREKEBISHO (UPDATE POSTS WHEN VERIFIED) ---
     toggleVerify: async (userId, currentStatus) => {
         const newStatus = !currentStatus;
-        
-        // 1. Update user profile in database
         await updateDoc(doc(db, "users", userId), { verified: newStatus });
         
-        // 2. MAGICAL FIX: Automatically update ALL their past posts to show/hide the badge!
         const postsQuery = query(collection(db, "posts"), where("authorId", "==", userId));
         const postsSnap = await getDocs(postsQuery);
         postsSnap.forEach(async (docSnap) => {
@@ -856,8 +906,6 @@ window.appAdmin = {
         ui.showToast(`User verification updated!`, 'success');
         appAdmin.renderUsers();
     },
-    // ----------------------------------------------------------------------
-
     addFakeFollowers: async (userId, currentFake) => {
         const amount = prompt("Enter number of followers to add:", "1000");
         if(amount === null || isNaN(amount) || amount === "") return;
@@ -942,6 +990,8 @@ window.appAdmin = {
         ui.showToast(unblock ? 'User unblocked' : 'Appeal rejected', 'success');
         appAdmin.renderAppeals();
     },
+
+    // MAREKEBISHO YA ANNOUNCEMENT ADMIN VIEW
     renderAnnouncements: async () => {
         const area = document.getElementById('admin-content-area');
         area.innerHTML = `
@@ -950,7 +1000,7 @@ window.appAdmin = {
                 <button class="btn-primary" style="width:auto; padding:6px 16px; font-size:0.8rem;" onclick="ui.showModal('announcement-modal')">+ Create New</button>
             </div><div id="ann-list">${t('loading')}</div>`;
         
-        const snap = await getDocs(collection(db, "announcements"));
+        const snap = await getDocs(query(collection(db, "announcements"), orderBy("time", "desc")));
         const list = document.getElementById('ann-list');
         list.innerHTML = '';
         const now = Date.now();
@@ -975,6 +1025,7 @@ window.appAdmin = {
         await deleteDoc(doc(db, "announcements", id));
         ui.showToast("Announcement deleted", "success"); 
         appAdmin.renderAnnouncements(); 
+        appFeatures.renderAnnouncementsToFeed(); // Update marquee
     },
     postAnnouncement: async () => {
         const text = document.getElementById('announcement-text').value.trim();
@@ -982,16 +1033,17 @@ window.appAdmin = {
         await addDoc(collection(db, "announcements"), { text: text, time: Date.now() });
         
         const usersSnap = await getDocs(collection(db, "users"));
-        usersSnap.forEach(u => appFeatures.notify(u.id, "New Admin Announcement."));
+        usersSnap.forEach(u => appFeatures.notify(u.id, "New Admin Announcement.", 'none', null));
         
         document.getElementById('announcement-text').value = '';
         ui.hideModal('announcement-modal'); 
         ui.showToast('Sent to all!', 'success'); 
         appAdmin.renderAnnouncements();
+        appFeatures.renderAnnouncementsToFeed(); // Update marquee instantly
     }
 };
 
-// --- 8. START APP (PAMOJA NA AUTO-SYNC FIX) ---
+// --- 8. START APP ---
 document.addEventListener('DOMContentLoaded', () => {
     const savedLang = localStorage.getItem('st_lang') || 'sw';
     appFeatures.changeLang(savedLang);
@@ -1000,9 +1052,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('auth-screen').classList.remove('active');
         document.getElementById('main-screen').classList.add('active');
         if(currentUser.role === 'admin') document.getElementById('admin-btn').style.display = 'block';
-        appFeatures.renderFeed();
         
-        // Hapa simu inajisikiliza na Database mda wote (Auto-Sync)
+        appFeatures.renderFeed();
+        appFeatures.renderAnnouncementsToFeed(); // Start Marquee
+        
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
             if(docSnap.exists()) {
                 const data = docSnap.data();
