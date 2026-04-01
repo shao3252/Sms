@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
     getFirestore, collection, addDoc, updateDoc, setDoc,
-    doc, query, orderBy, onSnapshot, deleteDoc, limit, arrayUnion, getDoc 
+    doc, query, orderBy, onSnapshot, deleteDoc, limit, arrayUnion, arrayRemove, getDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -10,8 +10,7 @@ const firebaseConfig = {
   projectId: "smstamu-28748",
   storageBucket: "smstamu-28748.firebasestorage.app",
   messagingSenderId: "928000331591",
-  appId: "1:928000331591:web:d71a658eb34feeea620662",
-  measurementId: "G-1VQHWVQS39"
+  appId: "1:928000331591:web:d71a658eb34feeea620662"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -27,7 +26,7 @@ let replyingTo = null;
 let isGroupOpen = true;
 let isGroupAdmin = false;
 
-// STRICT SPAM FILTER (Kuzuia tarakimu na links kwa watu wa kawaida)
+// Kuzuia spam (Namba na Links)
 const isSpamText = (text) => {
     const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9]+\.(com|net|org|co|tz|me|io|info))/i;
     const digitRegex = /\d/; 
@@ -35,28 +34,26 @@ const isSpamText = (text) => {
 };
 
 window.ui = {
-    showToast: (m, type='info') => {
+    showToast: (m, type='info') => { 
         const c = document.getElementById('toast-container'); 
-        const t = document.createElement('div');
+        const t = document.createElement('div'); 
         t.className = `toast ${type}`; 
         t.innerText = m; 
         c.appendChild(t); 
-        setTimeout(() => t.remove(), 3500);
+        setTimeout(() => t.remove(), 3500); 
     },
     showModal: (id) => document.getElementById(id).classList.add('active'),
     hideModal: (id) => document.getElementById(id).classList.remove('active')
 };
 
 const sanitize = (str) => str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-
-// Kutengeneza tick kwa wale walio verified kwenye chat
 const getVerifiedIcon = (v) => v ? `<span class="verified-badge" style="width:12px; height:12px; font-size:8px;">✓</span>` : '';
 
 window.chatSystem = {
     init: () => {
+        // MUHIMU KWA KUFUTA GREEN BADGE
         localStorage.setItem('st_chat_last_seen', Date.now());
 
-        // CHUKUA TAARIFA ZA GROUP
         const gRef = doc(db, "system", "group_settings");
         onSnapshot(gRef, (snap) => {
             if(snap.exists()){
@@ -89,7 +86,6 @@ window.chatSystem = {
                     } 
                 }
 
-                // Onyesha kitufe cha Settings kwa Admin
                 if(isGroupAdmin) {
                     document.getElementById('group-settings-btn').style.display = 'block';
                     document.getElementById('toggle-lock-btn').innerText = isGroupOpen ? '🔒 Funga Group (Lock)' : '🔓 Fungua Group (Unlock)';
@@ -98,7 +94,7 @@ window.chatSystem = {
                     document.getElementById('group-settings-btn').style.display = 'none';
                 }
 
-                // Pinned Messages Count
+                // Onyesha idadi ya meseji zilizopiniwa
                 const pins = data.pinnedMessages || [];
                 const bar = document.getElementById('pinned-bar');
                 if(pins.length > 0) { 
@@ -114,7 +110,6 @@ window.chatSystem = {
             }
         });
 
-        // SIKILIZA MESEJI (MUONEKANO SAFI KAMA TELEGRAM)
         const q = query(collection(db, "global_chat"), orderBy("timestamp", "asc"), limit(100));
         
         onSnapshot(q, (snap) => {
@@ -148,7 +143,7 @@ window.chatSystem = {
                     <span class="chat-time">${time}</span>
                 `;
                 
-                // KUBONYEZA MESEJI KUPATA OPTIONS
+                // Bonyeza meseji ili kufanya options
                 div.onclick = (e) => {
                     e.preventDefault();
                     
@@ -179,7 +174,6 @@ window.chatSystem = {
         const text = input.value.trim();
         if(!text) return;
 
-        // SPAM FILTER: Zuia Watu Kawaida (Admin anaweza)
         if(!isGroupAdmin && isSpamText(text)) {
             return ui.showToast("Hauruhusiwi kutuma Namba au Link humu!", "error");
         }
@@ -201,7 +195,6 @@ window.chatSystem = {
         input.value = ''; 
         chatSystem.cancelReply();
         
-        // Push scroll chini
         setTimeout(() => {
             const box = document.getElementById('global-chat-box');
             box.scrollTop = box.scrollHeight;
@@ -233,6 +226,15 @@ window.chatSystem = {
         await updateDoc(groupRef, { pinnedMessages: arrayUnion(selectedMsg.text) });
         ui.hideModal('msg-options-modal'); 
         ui.showToast("Imewekwa kwenye Pinned!", "success");
+    },
+
+    actionUnpin: async (encodedText) => {
+        if(confirm("Toa hii meseji kwenye Pinned?")) {
+            const groupRef = doc(db, "system", "group_settings");
+            await updateDoc(groupRef, { pinnedMessages: arrayRemove(decodeURIComponent(encodedText)) });
+            ui.showToast("Imetolewa!", "success");
+            chatSystem.showAllPinned(); // Refresh modal
+        }
     },
 
     actionDelete: async () => {
@@ -270,8 +272,6 @@ window.chatSystem = {
         window.location.href = 'index.html';
     },
 
-    /* ---- SETTINGS MPYA ZA KUBADILI GROUP (Kutokea kwenye Settings Modal) ---- */
-    
     toggleGroupLock: async () => {
         const groupRef = doc(db, "system", "group_settings");
         await updateDoc(groupRef, { isOpen: !isGroupOpen });
@@ -300,11 +300,9 @@ window.chatSystem = {
         reader.onload = (event) => {
             const img = new Image();
             img.onload = async () => {
-                // Compress image to save database space
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400;
-                const scaleSize = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
+                const scaleSize = 400 / img.width;
+                canvas.width = 400;
                 canvas.height = img.height * scaleSize;
                 
                 const ctx = canvas.getContext('2d');
@@ -330,8 +328,22 @@ window.chatSystem = {
         list.innerHTML = '';
         
         if(snap.exists() && snap.data().pinnedMessages){
-            snap.data().pinnedMessages.forEach(text => { 
-                list.innerHTML += `<div class="card" style="padding:10px; margin-bottom:5px;">${sanitize(text)}</div>`; 
+            const pins = snap.data().pinnedMessages;
+            if(pins.length === 0) {
+                ui.hideModal('pinned-modal');
+                ui.showToast("Hakuna Pinned messages.", "info");
+                return;
+            }
+
+            pins.forEach(text => { 
+                const encoded = encodeURIComponent(text);
+                const unpinBtn = isGroupAdmin ? `<button style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; padding:5px 0;" onclick="chatSystem.actionUnpin('${encoded}')">✖ Unpin</button>` : '';
+                
+                list.innerHTML += `
+                <div class="card" style="padding:10px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="flex:1;">${sanitize(text)}</div>
+                    <div>${unpinBtn}</div>
+                </div>`; 
             });
             ui.showModal('pinned-modal');
         } else {
@@ -340,14 +352,12 @@ window.chatSystem = {
     }
 };
 
-// Kutuma ujumbe kwa kubofya Enter key kwenye Keyboard
 document.getElementById('chat-msg-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         chatSystem.sendGlobalMessage();
     }
 });
 
-// Kusaidia kusukuma screen uki-focus Input kwenye simu
 document.getElementById('chat-msg-input').addEventListener('focus', () => {
     setTimeout(() => {
         const box = document.getElementById('global-chat-box');
