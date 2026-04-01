@@ -23,15 +23,7 @@
             <h1 class="logo-text">Sms Tamu 💖</h1>
             <p class="subtitle" data-i18n="welcomeSub">Shiriki meseji tamu za mapenzi</p>
             
-            <div id="login-form" class="auth-box">
-                <h2 data-i18n="loginHeader">Ingia</h2>
-                <input type="email" id="login-email" placeholder="Email">
-                <input type="password" id="login-pass" placeholder="Password">
-                <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
-                <p><span data-i18n="noAccount">Hauna akaunti?</span> <span onclick="appAuth.toggleAuth()" class="link" data-i18n="regHeader">Jisajili</span></p>
-            </div>
-
-            <div id="register-form" class="auth-box" style="display: none;">
+            <div id="register-form" class="auth-box">
                 <h2 data-i18n="regHeader">Jisajili</h2>
                 <input type="text" id="reg-user" placeholder="Username">
                 <input type="email" id="reg-email" placeholder="Email">
@@ -39,6 +31,15 @@
                 <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
                 <p><span data-i18n="haveAccount">Tayari una akaunti?</span> <span onclick="appAuth.toggleAuth()" class="link" data-i18n="loginHeader">Ingia</span></p>
             </div>
+
+            <div id="login-form" class="auth-box" style="display: none;">
+                <h2 data-i18n="loginHeader">Ingia</h2>
+                <input type="email" id="login-email" placeholder="Email">
+                <input type="password" id="login-pass" placeholder="Password">
+                <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
+                <p><span data-i18n="noAccount">Hauna akaunti?</span> <span onclick="appAuth.toggleAuth()" class="link" data-i18n="regHeader">Jisajili</span></p>
+            </div>
+
         </div>
     </div>
 
@@ -171,7 +172,10 @@
             <button class="nav-item active" onclick="router.navigate('home')">🏠<span data-i18n="navHome">Nyumbani</span></button>
             <button class="nav-item" onclick="router.navigate('search')">🔍<span data-i18n="navSearch">Tafuta</span></button>
             <button class="nav-item create-btn" onclick="router.navigate('create')"><div class="plus-icon">+</div></button>
-            <button class="nav-item" onclick="window.location.href='chat.html'">💬<span data-i18n="navChat">Chat</span></button>
+            <button class="nav-item" onclick="window.location.href='chat.html'" style="position:relative;">
+                💬<span data-i18n="navChat">Chat</span>
+                <span id="chat-badge" class="badge" style="display:none; position:absolute; top:-5px; right:10px; background:var(--danger); color:white; border-radius:10px; padding:2px 6px; font-size:10px; font-weight:bold;">0</span>
+            </button>
             <button class="nav-item" onclick="router.navigate('profile')">👤<span data-i18n="navProfile">Wasifu</span></button>
         </nav>
     </div>
@@ -213,6 +217,8 @@
                 .catch(err => console.log('Service Worker Imekataa:', err));
         });
     }
+    // Hakikisha inasoma Theme mapema sana
+    if(localStorage.getItem('st_theme') === 'dark') document.body.classList.add('dark');
 </script>
 
 <script type="module" src="app.js"></script>
