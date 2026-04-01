@@ -17,13 +17,21 @@
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button class="btn-outline" style="padding:5px 10px; border:none;" onclick="window.location.href='index.html'">🔙</button>
                     <div>
-                        <h3 style="margin:0; font-size:1.1rem;">🌍 Global Web Group</h3>
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <h3 id="group-title" style="margin:0; font-size:1.1rem;">🌍 Global Web Group</h3>
+                            <button id="edit-group-btn" style="display:none; background:none; border:none; font-size:1rem; cursor:pointer;" onclick="chatSystem.editGroupInfo()">✏️</button>
+                        </div>
                         <span id="group-state-badge" class="group-status" style="font-size:0.7rem; padding:2px 8px; border-radius:10px; color:white;">Open</span>
                     </div>
                 </div>
                 <div id="admin-group-controls" style="display:none;">
                     <button class="btn-outline" style="padding:4px 8px; font-size:0.8rem; color:var(--primary); border-color:var(--primary);" onclick="chatSystem.toggleGroupStatus()">Lock/Unlock</button>
                 </div>
+            </div>
+
+            <div id="pinned-msg-container" style="display:none; background: var(--card-bg); padding: 10px 15px; border-bottom: 1px solid var(--border); font-size: 0.85rem; border-left: 4px solid var(--primary); position:sticky; top:65px; z-index:9; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                <strong style="color:var(--primary)">📌 Pinned:</strong> <span id="pinned-msg-text">...</span>
+                <button id="unpin-btn" style="display:none; float:right; border:none; background:none; color:var(--danger); font-size:1.1rem; cursor:pointer;" onclick="chatSystem.actionUnpin()">✖</button>
             </div>
 
             <div id="global-chat-box" class="chat-box">
@@ -42,6 +50,8 @@
         <div class="modal-content card" style="margin-top: auto; border-bottom-left-radius: 0; border-bottom-right-radius: 0;">
             <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">Message Options</h3>
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionCopy()">📋 Copy Text</button>
+            <button id="opt-pin" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionPin()">📌 Pin Message</button>
+            <button id="opt-make-admin" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionMakeAdmin()">👑 Make Admin</button>
             <button id="opt-edit" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionEdit()">✏️ Edit Message</button>
             <button id="opt-delete" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionDelete()">🗑️ Delete Message</button>
             <button class="btn-primary mt-1" onclick="ui.hideModal('msg-options-modal')">Cancel</button>
