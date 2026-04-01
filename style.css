@@ -36,6 +36,10 @@ body { background: var(--bg-color); color: var(--text-main); transition: backgro
 .logo-text { font-size: 2.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; text-align: center; }
 .logo-text-small { font-size: 1.5rem; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; }
 
+/* Announcement Marquee */
+.announcement-bar { background: var(--primary); color: white; padding: 8px 10px; font-weight: bold; font-size: 0.95rem; display: flex; align-items: center; border-bottom: 2px solid #da1f55; }
+.announcement-bar marquee { width: 100%; }
+
 /* Language Switcher */
 .lang-switcher-auth { position: absolute; top: 20px; right: 20px; background: var(--card-bg); padding: 5px 10px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
 .lang-switcher-auth select { border: none; background: transparent; color: var(--text-main); outline: none; font-weight: bold; font-size: 0.9rem; }
