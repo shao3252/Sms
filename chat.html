@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -50,11 +50,9 @@
     <div id="group-settings-modal" class="modal">
         <div class="modal-content card" style="margin-top:auto; border-bottom-left-radius:0; border-bottom-right-radius:0;">
             <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">⚙️ Group Settings</h3>
-            
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="document.getElementById('group-pic-upload').click()">📷 Badili Picha ya Group</button>
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.editGroupName()">✏️ Badili Jina la Group</button>
             <button id="toggle-lock-btn" class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.toggleGroupLock()">🔒 Funga Group (Lock)</button>
-            
             <button class="btn-primary mt-1" onclick="ui.hideModal('group-settings-modal')">Ghairi</button>
         </div>
     </div>
@@ -62,16 +60,13 @@
     <div id="msg-options-modal" class="modal">
         <div class="modal-content card" style="margin-top:auto; border-bottom-left-radius:0; border-bottom-right-radius:0;">
             <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">Options</h3>
-            
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionReply()">↩️ Reply</button>
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionCopy()">📋 Copy Text</button>
             <button id="opt-profile" class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionViewProfile()">👤 View Profile</button>
-            
             <button id="opt-pin" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionPin()">📌 Pin Message</button>
             <button id="opt-admin-make" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--secondary);" onclick="chatSystem.actionMakeAdmin()">👑 Make Group Admin</button>
             <button id="opt-block" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionBlockUser()">🚫 Block User</button>
             <button id="opt-delete" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionDelete()">🗑️ Delete Message</button>
-            
             <button class="btn-primary mt-1" onclick="ui.hideModal('msg-options-modal')">Ghairi</button>
         </div>
     </div>
@@ -80,6 +75,7 @@
         <div class="modal-content card">
             <h3>📌 Pinned Messages</h3>
             <div id="pinned-list-container" style="max-height:300px; overflow-y:auto; margin:15px 0;"></div>
+            
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('pinned-modal')">Funga</button>
         </div>
     </div>
