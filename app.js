@@ -4,6 +4,7 @@ import {
     doc, query, where, orderBy, onSnapshot, deleteDoc, arrayUnion, arrayRemove, getDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// --- 1. FIREBASE CONFIGURATION ---
 const firebaseConfig = {
   apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
   authDomain: "smstamu-28748.firebaseapp.com",
@@ -17,11 +18,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// --- 2. GLOBAL STATE & TRANSLATIONS ---
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
 let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
 
+// KAMUSI (Iliyoongezwa Maneno Mapya)
 const translations = {
     sw: {
         welcomeSub: "Shiriki meseji tamu za mapenzi",
@@ -33,6 +36,7 @@ const translations = {
         haveAccount: "Tayari una akaunti?",
         navHome: "Nyumbani",
         navSearch: "Tafuta",
+        navChat: "Chat",
         navAlerts: "Taarifa",
         navProfile: "Wasifu",
         draftTitle: "Andika Meseji",
@@ -44,6 +48,7 @@ const translations = {
         likedTab: "Zilizopendwa",
         savedTab: "Zilizohifadhiwa",
         settingsTitle: "Mipangilio",
+        toggleTheme: "🌓 Badili Muonekano",
         reportBugBtn: "🐞 Ripoti Tatizo",
         myReportsBtn: "📋 Ripoti Zangu",
         logoutBtn: "🚪 Toka",
@@ -84,6 +89,7 @@ const translations = {
         haveAccount: "Already have an account?",
         navHome: "Home",
         navSearch: "Search",
+        navChat: "Chat",
         navAlerts: "Alerts",
         navProfile: "Profile",
         draftTitle: "Draft a Love Text",
@@ -95,6 +101,7 @@ const translations = {
         likedTab: "Liked",
         savedTab: "Saved",
         settingsTitle: "Settings",
+        toggleTheme: "🌓 Change Theme",
         reportBugBtn: "🐞 Report a Bug",
         myReportsBtn: "📋 My Bug Reports",
         logoutBtn: "🚪 Logout",
@@ -143,6 +150,8 @@ const getCategoryTranslation = (dbCatString) => {
     return t(map[dbCatString] || 'catOther');
 };
 
+// --- 3. UTILITIES ---
+const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 const sanitize = (str) => str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
 const getVerifiedIcon = (v) => v ? `<span class="verified-badge">✓</span>` : '';
 const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
@@ -186,6 +195,7 @@ const timeAgo = (timestamp) => {
     return "Just now";
 };
 
+// --- 4. ROUTER ---
 window.router = {
     navigate: (viewId) => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -205,6 +215,7 @@ window.router = {
     }
 };
 
+// --- 5. AUTHENTICATION ---
 window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim();
@@ -261,6 +272,7 @@ window.appAuth = {
     }
 };
 
+// --- 6. CORE FEATURES ---
 window.appFeatures = {
     changeLang: (langCode) => {
         localStorage.setItem('st_lang', langCode);
@@ -338,7 +350,6 @@ window.appFeatures = {
         }
     },
 
-    // COPY TEXT FUNCTION
     copyText: (encodedText) => {
         const text = decodeURIComponent(encodedText);
         navigator.clipboard.writeText(text).then(() => {
@@ -382,13 +393,13 @@ window.appFeatures = {
             const likeCount = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0);
             const commentCount = post.comments ? post.comments.length : 0;
             
-            // ADDED COPY BUTTON HERE
             html += `
             <div class="post-actions">
                 <button class="action-btn ${isLiked ? 'active' : ''}" onclick="appFeatures.toggleLike('${post.id}')">❤️ ${likeCount}</button>
                 <button class="action-btn" onclick="appFeatures.openComments('${post.id}')">💬 ${commentCount}</button>
                 <button class="action-btn" onclick="appFeatures.copyText('${encodedMsg}')">${t('copy')}</button>
                 <button class="action-btn" onclick="appFeatures.sharePost('${encodedMsg}')">${t('share')}</button>
+                <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾</button>
             </div>`;
             
             if (isOwner || isAdmin) {
@@ -683,7 +694,6 @@ window.appFeatures = {
         if (!found) c.innerHTML = `<p style="text-align:center; margin-top:20px; color:var(--text-muted)">${t('noPostsFound')}</p>`;
     },
 
-    // --- SEARCH ---
     search: async () => {
         const qText = document.getElementById('search-input').value.toLowerCase();
         const res = document.getElementById('search-results');
@@ -746,7 +756,12 @@ window.appFeatures = {
                 const n = { id: docSnap.id, ...docSnap.data() };
                 if(n.to === currentUser.id) {
                     found = true;
-                    if(!n.read) unread++;
+                    if(!n.read) {
+                        unread++;
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification("Sms Tamu 💖", { body: n.text });
+                        }
+                    }
                     const cursor = n.type !== 'none' ? 'cursor:pointer;' : '';
                     
                     c.innerHTML += `<div class="card" style="padding:10px; opacity: ${n.read ? '0.7' : '1'}; display:flex; justify-content:space-between; align-items:center;">
@@ -817,7 +832,7 @@ window.appFeatures = {
                 </div>`;
             }
         });
-        if(!found) list.innerHTML = '<p>No active announcements.</p>';
+        if(!found) list.innerHTML = '<p style="text-align:center;">You have not reported any bugs yet.</p>';
         router.navigate('my-reports');
     },
     submitAppeal: async () => {
@@ -1057,6 +1072,10 @@ window.appAdmin = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+
     const savedLang = localStorage.getItem('st_lang') || 'sw';
     appFeatures.changeLang(savedLang);
 
@@ -1068,7 +1087,6 @@ document.addEventListener('DOMContentLoaded', () => {
         appFeatures.renderFeed();
         appFeatures.renderAnnouncementsToFeed();
 
-        // ANZISHA BACKGROUND HEARTS KUDONDOKA
         setInterval(ui.createFallingHeart, 1500);
         
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
