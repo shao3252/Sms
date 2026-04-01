@@ -320,6 +320,25 @@ window.appFeatures = {
         }
     },
 
+    // NATIVE SHARE FUNCTION
+    sharePost: async (encodedText) => {
+        const text = decodeURIComponent(encodedText);
+        // Angalia kama simu inasapoti Native Sharing (Bottom Sheet)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Sms Tamu',
+                    text: text + '\n\n- Kutoka Sms Tamu 💖\n(Tufuate: https://shao3252.github.io/Sms/)'
+                });
+            } catch (err) {
+                console.log('Share canceled');
+            }
+        } else {
+            // Kama haisapoti (km kompyuta), tumia WhatsApp link ya kawaida
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + " \n\n- Kutoka Sms Tamu 💖")}`);
+        }
+    },
+
     createPostHTML: (post, context = 'feed') => {
         const isLiked = post.likes && post.likes.includes(currentUser.id);
         const isSaved = currentUser.saved && currentUser.saved.includes(post.id);
@@ -352,12 +371,14 @@ window.appFeatures = {
         } else {
             const likeCount = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0);
             const commentCount = post.comments ? post.comments.length : 0;
+            
+            // SHARING ILIYOREKEBISHWA
             html += `
             <div class="post-actions">
                 <button class="action-btn ${isLiked ? 'active' : ''}" onclick="appFeatures.toggleLike('${post.id}')">❤️ ${likeCount}</button>
                 <button class="action-btn" onclick="appFeatures.openComments('${post.id}')">💬 ${commentCount}</button>
                 <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾</button>
-                <button class="action-btn" onclick="appFeatures.shareWhatsApp('${post.text}')">${t('share')}</button>
+                <button class="action-btn" onclick="appFeatures.sharePost('${encodeURIComponent(post.text)}')">${t('share')}</button>
             </div>`;
             
             if (isOwner || isAdmin) {
@@ -399,7 +420,6 @@ window.appFeatures = {
         });
     },
 
-    // --- SEHEMU ILIYOREKEBISHWA (ID imebadilika kuitwa announcement-marquee) ---
     renderAnnouncementsToFeed: async () => {
         const q = query(collection(db, "announcements"), orderBy("time", "desc"));
         const snap = await getDocs(q);
@@ -414,11 +434,11 @@ window.appFeatures = {
         });
         
         const bar = document.getElementById('announcement-bar');
-        const marquee = document.getElementById('announcement-marquee'); // <--- Kosa lilikuwepo Hapa
+        const marquee = document.getElementById('announcement-marquee'); 
         
         if(texts.length > 0) {
             bar.style.display = 'block';
-            marquee.innerText = "📢 " + texts.join(" ⭐️ ");
+            marquee.innerText = "📢 " + texts.join("  |  📢 ");
         } else {
             bar.style.display = 'none';
         }
@@ -505,7 +525,6 @@ window.appFeatures = {
             appFeatures.notify(postSnap.data().authorId, `${currentUser.username} commented on your post.`, 'post', currentCommentPostId);
         }
     },
-    shareWhatsApp: (text) => { window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + " \n\n- Shared via Sms Tamu")}`); },
 
     // --- PROFILE & FOLLOWS ---
     renderProfile: () => {
@@ -713,6 +732,14 @@ window.appFeatures = {
             to: toId, text: text, time: Date.now(), read: false, type: type, linkId: linkId
         });
     },
+
+    // UWEZO WA KUFUTA ALERTS UMEONGEZWA HAPA
+    deleteNotification: async (notifId) => {
+        if(!confirm("Delete this alert?")) return;
+        await deleteDoc(doc(db, "notifications", notifId));
+        ui.showToast('Deleted', 'success');
+    },
+
     renderNotifications: () => {
         const q = query(collection(db, "notifications"), orderBy("time", "desc"));
         onSnapshot(q, (snap) => {
@@ -725,10 +752,21 @@ window.appFeatures = {
                 const n = { id: docSnap.id, ...docSnap.data() };
                 if(n.to === currentUser.id) {
                     found = true;
-                    if(!n.read) unread++;
+                    if(!n.read) {
+                        unread++;
+                        // Trigger Browser Notification if supported and active
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification("Sms Tamu 💖", { body: n.text });
+                        }
+                    }
                     const cursor = n.type !== 'none' ? 'cursor:pointer;' : '';
-                    c.innerHTML += `<div class="card" style="padding:10px; opacity: ${n.read ? '0.7' : '1'}; ${cursor}" onclick="appFeatures.handleNotificationClick('${n.type}', '${n.linkId}', '${n.id}')">
-                        <p>${sanitize(n.text)}</p><small>${timeAgo(n.time)}</small>
+                    
+                    // Nimeongeza Kitufe cha Kufuta Notification Hapa
+                    c.innerHTML += `<div class="card" style="padding:10px; opacity: ${n.read ? '0.7' : '1'}; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="${cursor} flex:1;" onclick="appFeatures.handleNotificationClick('${n.type}', '${n.linkId}', '${n.id}')">
+                            <p>${sanitize(n.text)}</p><small>${timeAgo(n.time)}</small>
+                        </div>
+                        <button class="btn-outline" style="border:none; font-size:1.2rem; color:var(--danger); padding:5px;" onclick="appFeatures.deleteNotification('${n.id}')">🗑️</button>
                     </div>`;
                 }
             });
@@ -738,6 +776,7 @@ window.appFeatures = {
             if (unread > 0) { b.style.display = 'block'; b.innerText = unread; } else { b.style.display = 'none'; }
         });
     },
+
     handleNotificationClick: async (type, linkId, notifId) => {
         await updateDoc(doc(db, "notifications", notifId), { read: true });
         
@@ -1018,7 +1057,6 @@ window.appAdmin = {
         appFeatures.renderAnnouncementsToFeed();
     },
     postAnnouncement: async () => {
-        // --- SEHEMU ILIYOREKEBISHWA (ID ni ileile ya mwanzo announcement-text) ---
         const text = document.getElementById('announcement-text').value.trim();
         if(!text) return ui.showToast("Cannot be empty", "error");
         await addDoc(collection(db, "announcements"), { text: text, time: Date.now() });
@@ -1036,6 +1074,11 @@ window.appAdmin = {
 
 // --- 8. START APP ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Omba ruhusa ya Push Notifications (kwa Web API)
+    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+
     const savedLang = localStorage.getItem('st_lang') || 'sw';
     appFeatures.changeLang(savedLang);
 
@@ -1047,29 +1090,23 @@ document.addEventListener('DOMContentLoaded', () => {
         appFeatures.renderFeed();
         appFeatures.renderAnnouncementsToFeed();
         
+        // --- SEHEMU ILIYOREKEBISHWA YA KUSYNC DATA YOTE ---
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
             if(docSnap.exists()) {
                 const data = docSnap.data();
-                let needsUpdate = false;
                 
-                if(data.isBlocked !== currentUser.isBlocked) {
-                    currentUser.isBlocked = data.isBlocked;
-                    needsUpdate = true;
-                    if(currentUser.isBlocked) ui.showToast('Your account was just blocked by Admin', 'error');
+                if(data.isBlocked && !currentUser.isBlocked) {
+                    ui.showToast('Your account was just blocked by Admin', 'error');
                 }
                 
-                if(data.verified !== currentUser.verified) {
-                    currentUser.verified = data.verified;
-                    needsUpdate = true;
-                }
+                // Hapa mfumo unasasisha kila kitu kipya (followers, fakeFollowers, n.k)
+                currentUser = { id: docSnap.id, ...data };
+                localStorage.setItem('st_session', JSON.stringify(currentUser));
                 
-                if(data.role !== currentUser.role) {
-                    currentUser.role = data.role;
-                    needsUpdate = true;
-                }
-
-                if(needsUpdate) {
-                    localStorage.setItem('st_session', JSON.stringify(currentUser));
+                // Kama mtu yupo kwenye ukurasa wake wa Profile, sasisha namba papo hapo bila kurifresh
+                if(document.getElementById('view-profile').classList.contains('active')) {
+                    document.getElementById('my-followers').innerText = (currentUser.followers ? currentUser.followers.length : 0) + (currentUser.fakeFollowers || 0);
+                    document.getElementById('my-verified').innerHTML = getVerifiedIcon(currentUser.verified);
                 }
             }
         });
