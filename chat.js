@@ -24,10 +24,10 @@ let replyingTo = null;
 let isGroupOpen = true;
 let isGroupAdmin = false;
 
-// STRICT SPAM FILTER
+// KUZUIA NAMBA NA LINK
 const isSpamText = (text) => {
     const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9]+\.(com|net|org|co|tz|me|io|info))/i;
-    const digitRegex = /\d/; // NO NUMBERS AT ALL
+    const digitRegex = /\d/; 
     return linkRegex.test(text) || digitRegex.test(text);
 };
 
@@ -40,11 +40,12 @@ window.ui = {
     hideModal: (id) => document.getElementById(id).classList.remove('active')
 };
 
+const sanitize = (str) => str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+
 window.chatSystem = {
     init: () => {
         localStorage.setItem('st_chat_last_seen', Date.now());
 
-        // LOAD GROUP SETTINGS
         const gRef = doc(db, "system", "group_settings");
         onSnapshot(gRef, (snap) => {
             if(snap.exists()){
@@ -72,7 +73,6 @@ window.chatSystem = {
             }
         });
 
-        // LOAD MESSAGES (WHATSAPP STYLE)
         const q = query(collection(db, "global_chat"), orderBy("timestamp", "asc"), limit(100));
         onSnapshot(q, (snap) => {
             const box = document.getElementById('global-chat-box');
@@ -84,14 +84,15 @@ window.chatSystem = {
                 
                 let replyHTML = '';
                 if(m.replyTo) {
-                    replyHTML = `<div class="reply-block"><strong style="color:var(--primary)">${m.replyTo.name}</strong><br><span style="opacity:0.8">${m.replyTo.text}</span></div>`;
+                    replyHTML = `<div style="background:rgba(0,0,0,0.05); border-left:3px solid var(--primary); padding:5px; border-radius:4px; font-size:0.8rem; margin-bottom:5px;"><strong style="color:var(--primary)">${sanitize(m.replyTo.name)}</strong><br><span style="opacity:0.8">${sanitize(m.replyTo.text)}</span></div>`;
                 }
 
                 const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const sender = isMine ? '' : `<strong style="font-size:0.75rem; color:var(--primary); display:block; cursor:pointer;" onclick="chatSystem.directProfile('${m.uId}')">${m.username}</strong>`;
+                const sender = isMine ? '' : `<strong style="font-size:0.75rem; color:var(--primary); display:block; margin-bottom:2px;">${sanitize(m.username)}</strong>`;
 
-                div.innerHTML = `${sender}${replyHTML}<span>${m.text}</span><span class="chat-time">${time}</span>`;
+                div.innerHTML = `${sender}${replyHTML}<span>${sanitize(m.text)}</span><span class="chat-time" style="display:block; font-size:0.65rem; margin-top:3px; opacity:0.8; text-align:right;">${time}</span>`;
                 
+                // LONG PRESS OPTIONS (WhatsApp style)
                 div.oncontextmenu = (e) => {
                     e.preventDefault();
                     selectedMsg = { id: d.id, text: m.text, uId: m.uId, username: m.username };
@@ -139,6 +140,11 @@ window.chatSystem = {
         document.getElementById('reply-preview').style.display = 'none';
     },
 
+    actionCopy: () => {
+        navigator.clipboard.writeText(selectedMsg.text);
+        ui.hideModal('msg-options-modal'); ui.showToast('Copied!', 'success');
+    },
+
     actionPin: async () => {
         await updateDoc(doc(db, "system", "group_settings"), { pinnedMessages: arrayUnion(selectedMsg.text) });
         ui.hideModal('msg-options-modal'); ui.showToast("Pinned!", "success");
@@ -169,11 +175,6 @@ window.chatSystem = {
         window.location.href = 'index.html';
     },
 
-    directProfile: (id) => {
-        localStorage.setItem('st_view_user', id);
-        window.location.href = 'index.html';
-    },
-
     toggleGroupLock: async () => {
         await updateDoc(doc(db, "system", "group_settings"), { isOpen: !isGroupOpen });
     },
@@ -194,10 +195,14 @@ window.chatSystem = {
         const snap = await getDoc(doc(db, "system", "group_settings"));
         const list = document.getElementById('pinned-list-container'); list.innerHTML = '';
         if(snap.exists() && snap.data().pinnedMessages){
-            snap.data().pinnedMessages.forEach(text => { list.innerHTML += `<div class="card" style="padding:10px; margin-bottom:5px;">${text}</div>`; });
+            snap.data().pinnedMessages.forEach(text => { list.innerHTML += `<div class="card" style="padding:10px; margin-bottom:5px;">${sanitize(text)}</div>`; });
             ui.showModal('pinned-modal');
         }
     }
 };
+
+document.getElementById('chat-msg-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') chatSystem.sendGlobalMessage();
+});
 
 chatSystem.init();
