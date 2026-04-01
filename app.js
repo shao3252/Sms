@@ -4,7 +4,6 @@ import {
     doc, query, where, orderBy, onSnapshot, deleteDoc, arrayUnion, arrayRemove, getDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- 1. FIREBASE CONFIGURATION ---
 const firebaseConfig = {
   apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
   authDomain: "smstamu-28748.firebaseapp.com",
@@ -18,7 +17,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- 2. GLOBAL STATE & TRANSLATIONS ---
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
 let currentFeedCategory = 'All';
 let viewingUserId = null;
@@ -56,6 +54,7 @@ const translations = {
         approve: "Ruhusu",
         reject: "Kataa",
         share: "Shiriki",
+        copy: "📋 Copy",
         deletePost: "Futa",
         editPost: "✏️ Edit",
         editCat: "✏️ Kundi",
@@ -106,6 +105,7 @@ const translations = {
         approve: "Approve",
         reject: "Reject",
         share: "Share",
+        copy: "📋 Copy",
         deletePost: "Delete",
         editPost: "✏️ Edit",
         editCat: "✏️ Edit Cat",
@@ -143,8 +143,6 @@ const getCategoryTranslation = (dbCatString) => {
     return t(map[dbCatString] || 'catOther');
 };
 
-// --- 3. UTILITIES ---
-const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 const sanitize = (str) => str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
 const getVerifiedIcon = (v) => v ? `<span class="verified-badge">✓</span>` : '';
 const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
@@ -162,7 +160,19 @@ window.ui = {
         localStorage.setItem('st_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
     },
     showModal: (id) => document.getElementById(id).classList.add('active'),
-    hideModal: (id) => document.getElementById(id).classList.remove('active')
+    hideModal: (id) => document.getElementById(id).classList.remove('active'),
+    
+    // HEARTS ANIMATION SYSTEM
+    createFallingHeart: () => {
+        const heart = document.createElement('div');
+        heart.className = 'heart-fall';
+        const hearts = ['❤️', '💖', '💘', '💝', '💕', '🥰', '😍'];
+        heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = (Math.random() * 5 + 4) + 's'; // 4-9 seconds
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 9000);
+    }
 };
 
 const timeAgo = (timestamp) => {
@@ -176,7 +186,6 @@ const timeAgo = (timestamp) => {
     return "Just now";
 };
 
-// --- 4. ROUTER ---
 window.router = {
     navigate: (viewId) => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -196,7 +205,6 @@ window.router = {
     }
 };
 
-// --- 5. AUTHENTICATION ---
 window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim();
@@ -253,7 +261,6 @@ window.appAuth = {
     }
 };
 
-// --- 6. CORE FEATURES ---
 window.appFeatures = {
     changeLang: (langCode) => {
         localStorage.setItem('st_lang', langCode);
@@ -320,23 +327,25 @@ window.appFeatures = {
         }
     },
 
-    // NATIVE SHARE FUNCTION
     sharePost: async (encodedText) => {
         const text = decodeURIComponent(encodedText);
-        // Angalia kama simu inasapoti Native Sharing (Bottom Sheet)
         if (navigator.share) {
             try {
-                await navigator.share({
-                    title: 'Sms Tamu',
-                    text: text + '\n\n- Kutoka Sms Tamu 💖\n(Tufuate: https://shao3252.github.io/Sms/)'
-                });
-            } catch (err) {
-                console.log('Share canceled');
-            }
+                await navigator.share({ title: 'Sms Tamu', text: text + '\n\n- Kutoka Sms Tamu 💖\n(Tufuate: https://shao3252.github.io/Sms/)' });
+            } catch (err) { console.log('Share canceled'); }
         } else {
-            // Kama haisapoti (km kompyuta), tumia WhatsApp link ya kawaida
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + " \n\n- Kutoka Sms Tamu 💖")}`);
         }
+    },
+
+    // COPY TEXT FUNCTION
+    copyText: (encodedText) => {
+        const text = decodeURIComponent(encodedText);
+        navigator.clipboard.writeText(text).then(() => {
+            ui.showToast(t('copy') + ' Success!', 'success');
+        }).catch(() => {
+            ui.showToast('Failed to copy', 'error');
+        });
     },
 
     createPostHTML: (post, context = 'feed') => {
@@ -350,6 +359,7 @@ window.appFeatures = {
         let adminCatChanger = isAdmin ? `<span style="cursor:pointer; color:var(--secondary); margin-left:10px; font-size:0.75rem;" onclick="appAdmin.changeCategory('${post.id}')">${t('editCat')}</span>` : '';
 
         const displayCat = getCategoryTranslation(post.category);
+        const encodedMsg = encodeURIComponent(post.text);
 
         let html = `
         <div class="card" id="post-${post.id}">
@@ -372,13 +382,13 @@ window.appFeatures = {
             const likeCount = (post.likes ? post.likes.length : 0) + (post.fakeLikes || 0);
             const commentCount = post.comments ? post.comments.length : 0;
             
-            // SHARING ILIYOREKEBISHWA
+            // ADDED COPY BUTTON HERE
             html += `
             <div class="post-actions">
                 <button class="action-btn ${isLiked ? 'active' : ''}" onclick="appFeatures.toggleLike('${post.id}')">❤️ ${likeCount}</button>
                 <button class="action-btn" onclick="appFeatures.openComments('${post.id}')">💬 ${commentCount}</button>
-                <button class="action-btn ${isSaved ? 'active' : ''}" onclick="appFeatures.toggleSave('${post.id}')">💾</button>
-                <button class="action-btn" onclick="appFeatures.sharePost('${encodeURIComponent(post.text)}')">${t('share')}</button>
+                <button class="action-btn" onclick="appFeatures.copyText('${encodedMsg}')">${t('copy')}</button>
+                <button class="action-btn" onclick="appFeatures.sharePost('${encodedMsg}')">${t('share')}</button>
             </div>`;
             
             if (isOwner || isAdmin) {
@@ -398,11 +408,9 @@ window.appFeatures = {
 
     renderFeed: () => {
         const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-        
         onSnapshot(q, (snap) => {
             const container = document.getElementById('feed-container');
             container.innerHTML = '';
-
             let hasPosts = false;
             snap.forEach(docSnap => {
                 const post = { id: docSnap.id, ...docSnap.data() };
@@ -413,10 +421,7 @@ window.appFeatures = {
                     }
                 }
             });
-            
-            if (!hasPosts) {
-                container.innerHTML += `<p style="text-align:center; color:var(--text-muted)">${t('noPostsFound')}</p>`;
-            }
+            if (!hasPosts) container.innerHTML += `<p style="text-align:center; color:var(--text-muted)">${t('noPostsFound')}</p>`;
         });
     },
 
@@ -424,13 +429,10 @@ window.appFeatures = {
         const q = query(collection(db, "announcements"), orderBy("time", "desc"));
         const snap = await getDocs(q);
         const now = Date.now();
-        
         let texts = [];
         snap.forEach(docSnap => {
             const a = docSnap.data();
-            if ((now - a.time) < 86400000) { 
-                texts.push(sanitize(a.text));
-            }
+            if ((now - a.time) < 86400000) texts.push(sanitize(a.text));
         });
         
         const bar = document.getElementById('announcement-bar');
@@ -470,7 +472,6 @@ window.appFeatures = {
         const hasSaved = currentUser.saved && currentUser.saved.includes(postId);
         
         if (!currentUser.saved) currentUser.saved = [];
-        
         if (hasSaved) {
             currentUser.saved = currentUser.saved.filter(id => id !== postId);
             await updateDoc(userRef, { saved: arrayRemove(postId) });
@@ -526,16 +527,13 @@ window.appFeatures = {
         }
     },
 
-    // --- PROFILE & FOLLOWS ---
     renderProfile: () => {
         document.getElementById('my-username').innerText = currentUser.username;
         document.getElementById('my-verified').innerHTML = getVerifiedIcon(currentUser.verified);
         document.getElementById('my-bio').innerText = currentUser.bio || "No bio yet.";
         document.getElementById('my-prof-pic').src = currentUser.pic || defaultAvatar;
-        
         document.getElementById('my-following').innerText = currentUser.following ? currentUser.following.length : 0;
         document.getElementById('my-followers').innerText = (currentUser.followers ? currentUser.followers.length : 0) + (currentUser.fakeFollowers || 0);
-
         document.getElementById('edit-user').value = currentUser.username;
         document.getElementById('edit-bio').value = currentUser.bio || "";
         appFeatures.loadProfilePosts('own');
@@ -550,7 +548,6 @@ window.appFeatures = {
         document.getElementById('other-verified').innerHTML = getVerifiedIcon(targetUser.verified);
         document.getElementById('other-bio').innerText = targetUser.bio || 'No bio yet.';
         document.getElementById('other-prof-pic').src = targetUser.pic || defaultAvatar;
-        
         document.getElementById('other-following').innerText = targetUser.following ? targetUser.following.length : 0;
         document.getElementById('other-followers').innerText = (targetUser.followers ? targetUser.followers.length : 0) + (targetUser.fakeFollowers || 0);
 
@@ -587,7 +584,6 @@ window.appFeatures = {
         const targetRef = doc(db, "users", viewingUserId);
         
         if (!currentUser.following) currentUser.following = [];
-        
         if(currentUser.following.includes(viewingUserId)) {
             await updateDoc(myRef, { following: arrayRemove(viewingUserId) });
             await updateDoc(targetRef, { followers: arrayRemove(currentUser.id) });
@@ -726,14 +722,12 @@ window.appFeatures = {
         res.innerHTML = html;
     },
 
-    // --- NOTIFICATIONS & REPORTS ---
     notify: async (toId, text, type = 'none', linkId = null) => {
         await addDoc(collection(db, "notifications"), {
             to: toId, text: text, time: Date.now(), read: false, type: type, linkId: linkId
         });
     },
 
-    // UWEZO WA KUFUTA ALERTS UMEONGEZWA HAPA
     deleteNotification: async (notifId) => {
         if(!confirm("Delete this alert?")) return;
         await deleteDoc(doc(db, "notifications", notifId));
@@ -752,16 +746,9 @@ window.appFeatures = {
                 const n = { id: docSnap.id, ...docSnap.data() };
                 if(n.to === currentUser.id) {
                     found = true;
-                    if(!n.read) {
-                        unread++;
-                        // Trigger Browser Notification if supported and active
-                        if ('Notification' in window && Notification.permission === 'granted') {
-                            new Notification("Sms Tamu 💖", { body: n.text });
-                        }
-                    }
+                    if(!n.read) unread++;
                     const cursor = n.type !== 'none' ? 'cursor:pointer;' : '';
                     
-                    // Nimeongeza Kitufe cha Kufuta Notification Hapa
                     c.innerHTML += `<div class="card" style="padding:10px; opacity: ${n.read ? '0.7' : '1'}; display:flex; justify-content:space-between; align-items:center;">
                         <div style="${cursor} flex:1;" onclick="appFeatures.handleNotificationClick('${n.type}', '${n.linkId}', '${n.id}')">
                             <p>${sanitize(n.text)}</p><small>${timeAgo(n.time)}</small>
@@ -830,7 +817,7 @@ window.appFeatures = {
                 </div>`;
             }
         });
-        if(!found) list.innerHTML = '<p style="text-align:center;">You have not reported any bugs yet.</p>';
+        if(!found) list.innerHTML = '<p>No active announcements.</p>';
         router.navigate('my-reports');
     },
     submitAppeal: async () => {
@@ -843,7 +830,6 @@ window.appFeatures = {
     }
 };
 
-// --- 7. ADMIN SYSTEM ---
 window.appAdmin = {
     addFakeLikes: async (postId, currentFake) => {
         const amount = prompt("Enter number of likes to add:", "100");
@@ -927,13 +913,11 @@ window.appAdmin = {
     toggleVerify: async (userId, currentStatus) => {
         const newStatus = !currentStatus;
         await updateDoc(doc(db, "users", userId), { verified: newStatus });
-        
         const postsQuery = query(collection(db, "posts"), where("authorId", "==", userId));
         const postsSnap = await getDocs(postsQuery);
         postsSnap.forEach(async (docSnap) => {
             await updateDoc(doc(db, "posts", docSnap.id), { authorVerified: newStatus });
         });
-
         ui.showToast(`User verification updated!`, 'success');
         appAdmin.renderUsers();
     },
@@ -1072,13 +1056,7 @@ window.appAdmin = {
     }
 };
 
-// --- 8. START APP ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Omba ruhusa ya Push Notifications (kwa Web API)
-    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-        Notification.requestPermission();
-    }
-
     const savedLang = localStorage.getItem('st_lang') || 'sw';
     appFeatures.changeLang(savedLang);
 
@@ -1089,21 +1067,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         appFeatures.renderFeed();
         appFeatures.renderAnnouncementsToFeed();
+
+        // ANZISHA BACKGROUND HEARTS KUDONDOKA
+        setInterval(ui.createFallingHeart, 1500);
         
-        // --- SEHEMU ILIYOREKEBISHWA YA KUSYNC DATA YOTE ---
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
             if(docSnap.exists()) {
                 const data = docSnap.data();
+                if(data.isBlocked && !currentUser.isBlocked) ui.showToast('Your account was just blocked by Admin', 'error');
                 
-                if(data.isBlocked && !currentUser.isBlocked) {
-                    ui.showToast('Your account was just blocked by Admin', 'error');
-                }
-                
-                // Hapa mfumo unasasisha kila kitu kipya (followers, fakeFollowers, n.k)
                 currentUser = { id: docSnap.id, ...data };
                 localStorage.setItem('st_session', JSON.stringify(currentUser));
                 
-                // Kama mtu yupo kwenye ukurasa wake wa Profile, sasisha namba papo hapo bila kurifresh
                 if(document.getElementById('view-profile').classList.contains('active')) {
                     document.getElementById('my-followers').innerText = (currentUser.followers ? currentUser.followers.length : 0) + (currentUser.fakeFollowers || 0);
                     document.getElementById('my-verified').innerHTML = getVerifiedIcon(currentUser.verified);
