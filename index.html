@@ -20,6 +20,7 @@
                     <option value="en">English</option>
                 </select>
             </div>
+            
             <h1 class="logo-text">Sms Tamu 💖</h1>
             <p class="subtitle" data-i18n="welcomeSub">Shiriki meseji tamu za mapenzi</p>
             
@@ -29,7 +30,10 @@
                 <input type="email" id="reg-email" placeholder="Email">
                 <input type="password" id="reg-pass" placeholder="Password">
                 <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
-                <p><span data-i18n="haveAccount">Tayari una akaunti?</span> <span onclick="appAuth.toggleAuth()" class="link" data-i18n="loginHeader">Ingia</span></p>
+                <p style="margin-top: 15px;">
+                    <span data-i18n="haveAccount">Tayari una akaunti?</span> 
+                    <span onclick="appAuth.toggleAuth()" class="link" data-i18n="loginHeader">Ingia</span>
+                </p>
             </div>
 
             <div id="login-form" class="auth-box" style="display: none;">
@@ -37,12 +41,16 @@
                 <input type="email" id="login-email" placeholder="Email">
                 <input type="password" id="login-pass" placeholder="Password">
                 <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
-                <p><span data-i18n="noAccount">Hauna akaunti?</span> <span onclick="appAuth.toggleAuth()" class="link" data-i18n="regHeader">Jisajili</span></p>
+                <p style="margin-top: 15px;">
+                    <span data-i18n="noAccount">Hauna akaunti?</span> 
+                    <span onclick="appAuth.toggleAuth()" class="link" data-i18n="regHeader">Jisajili</span>
+                </p>
             </div>
         </div>
     </div>
 
     <div id="main-screen" class="screen">
+        
         <header class="app-header">
             <h2 class="logo-text-small" style="margin: 0 auto;">Sms Tamu 💖</h2>
         </header>
@@ -52,20 +60,25 @@
         </div>
 
         <div class="content-area">
+            
             <div id="view-home" class="view active">
                 <div class="category-scroll" id="feed-categories">
                     <button class="cat-pill active" onclick="appFeatures.filterFeed('All')" data-i18n="catAll">Yote</button>
+                    
+                    <button class="cat-pill premium-cat" onclick="window.location.href='premium.html'" style="border-color:#d4af37; color:#d4af37; font-weight:bold;">🌟 Message Kuntu</button>
+                    
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Apology messages')" data-i18n="catApology">Kuomba Msamaha</button>
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Messages of praise')" data-i18n="catPraise">Kusifia</button>
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Seductive Messages')" data-i18n="catSeductive">Kuvutia</button>
                     <button class="cat-pill" onclick="appFeatures.filterFeed('Other')" data-i18n="catOther">Mengineyo</button>
                 </div>
+                
                 <div id="feed-container"></div>
             </div>
 
             <div id="view-search" class="view">
                 <div class="search-bar">
-                    <input type="text" id="search-input" placeholder="Search posts or @users..." oninput="appFeatures.search()">
+                    <input type="text" id="search-input" placeholder="Tafuta posts au watumiaji..." oninput="appFeatures.search()">
                 </div>
                 <div id="search-results"></div>
             </div>
@@ -75,29 +88,19 @@
                     <h3 data-i18n="draftTitle">Andika Meseji</h3>
                     <select id="post-category" class="custom-select">
                         <option value="" disabled selected data-i18n="catSelect">Chagua Kundi...</option>
+                        <option id="opt-premium" value="Message Kuntu" style="display:none; color:#d4af37; font-weight:bold;">🌟 Message Kuntu (VIP)</option>
                         <option value="Apology messages" data-i18n="catApology">Kuomba Msamaha</option>
                         <option value="Messages of praise" data-i18n="catPraise">Kusifia</option>
                         <option value="Seductive Messages" data-i18n="catSeductive">Kuvutia</option>
                         <option value="Other" data-i18n="catOther">Mengineyo</option>
                     </select>
-                    <textarea id="post-text" placeholder="..."></textarea>
+                    <textarea id="post-text" placeholder="Andika ujumbe wako hapa..."></textarea>
                     <button class="btn-primary" onclick="appFeatures.createPost()" data-i18n="sendApprovalBtn">Tuma Ikaguliwe</button>
                 </div>
             </div>
 
-            <div id="view-notify" class="view">
-                <h3 data-i18n="navAlerts">Taarifa</h3>
-                <div id="notify-container"></div>
-            </div>
-
-            <div id="view-single-post" class="view">
-                <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('home')">🔙</button>
-                <div id="single-post-container"></div>
-            </div>
-
             <div id="view-profile" class="view">
                 <div class="profile-header card">
-                    
                     <div style="position: absolute; top: 15px; right: 15px; display: flex; gap: 10px;">
                         <button class="icon-btn" id="admin-btn" style="display:none; font-size:1.2rem;" onclick="router.navigate('admin')">🛡️</button>
                         <button class="icon-btn" style="font-size:1.2rem;" onclick="appFeatures.openSettings()">⚙️</button>
@@ -108,114 +111,167 @@
                         <div class="edit-pic-overlay">📷</div>
                     </div>
                     <input type="file" id="prof-pic-upload" accept="image/*" style="display:none" onchange="appFeatures.updateProfilePic(event)">
-                    <h2><span id="my-username">User</span> <span id="my-verified"></span></h2>
-                    <p id="my-bio">No bio yet.</p>
+                    
+                    <h2><span id="my-username">User</span> <span id="my-verified"></span> <span id="my-premium"></span></h2>
+                    <p id="my-bio" style="color: var(--text-muted); margin-top: 5px;">No bio yet.</p>
                     
                     <div class="profile-stats">
                         <div><strong id="my-following">0</strong><br><small data-i18n="followingText">Following</small></div>
                         <div><strong id="my-followers">0</strong><br><small data-i18n="followersText">Followers</small></div>
                     </div>
+                    
                     <button class="btn-outline mt-1" onclick="ui.showModal('edit-profile-modal')" data-i18n="editProfileBtn">Badili Wasifu</button>
                 </div>
+                
                 <div class="profile-tabs">
                     <button class="tab active" onclick="appFeatures.loadProfilePosts('own')" data-i18n="myPostsTab">Posti Zangu</button>
                     <button class="tab" onclick="appFeatures.loadProfilePosts('liked')" data-i18n="likedTab">Zilizopendwa</button>
                     <button class="tab" onclick="appFeatures.loadProfilePosts('saved')" data-i18n="savedTab">Zilizohifadhiwa</button>
                 </div>
+                
                 <div id="profile-posts-container"></div>
             </div>
 
             <div id="view-other-profile" class="view">
                 <div class="profile-header card">
                     <button class="btn-outline" style="position:absolute; top:15px; left:15px; padding:5px 10px;" onclick="router.navigate('home')">🔙</button>
+                    
+                    <button id="user-block-btn" class="btn-outline" style="position:absolute; top:15px; right:15px; padding:5px 10px; color:var(--danger); border-color:var(--danger);" onclick="appFeatures.toggleBlockUser()">🚫 Block</button>
+                    
                     <div class="prof-img-wrapper" style="margin-top:20px;">
                         <img id="other-prof-pic" src="" alt="Profile">
                     </div>
-                    <h2><span id="other-username"></span> <span id="other-verified"></span></h2>
-                    <p id="other-bio"></p>
+                    
+                    <h2><span id="other-username"></span> <span id="other-verified"></span> <span id="other-premium"></span></h2>
+                    <p id="other-bio" style="color: var(--text-muted); margin-top: 5px;"></p>
+                    
                     <div class="profile-stats">
                         <div><strong id="other-following">0</strong><br><small data-i18n="followingText">Following</small></div>
                         <div><strong id="other-followers">0</strong><br><small data-i18n="followersText">Followers</small></div>
                     </div>
+                    
                     <div class="mt-1">
                         <button id="follow-btn" class="btn-primary" onclick="appFeatures.toggleFollow()">Follow</button>
                     </div>
                 </div>
-                <h3 style="text-align:center; margin-bottom:10px;" data-i18n="postsTitle">Posts</h3>
+                
+                <h3 style="text-align:center; margin-bottom:10px; color:var(--text-muted);" data-i18n="postsTitle">Posts</h3>
                 <div id="other-profile-posts"></div>
-            </div>
-
-            <div id="view-my-reports" class="view">
-                <div class="profile-header card">
-                    <button class="btn-outline" style="position:absolute; top:15px; left:15px; padding:5px 10px;" onclick="router.navigate('profile')">🔙</button>
-                    <h2 style="margin-top:20px;" data-i18n="myReportsBtn">Ripoti Zangu</h2>
-                </div>
-                <div id="my-reports-list"></div>
             </div>
 
             <div id="view-admin" class="view">
                 <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('profile')">🔙</button>
-                <h3>Admin Dashboard</h3>
+                <h3 style="margin-bottom: 15px;">Admin Dashboard</h3>
+                
                 <div class="card" style="text-align:center; margin-bottom:15px;">
-                    <strong>Auto Approve Status:</strong> <span id="auto-app-status-text" style="color:var(--primary); font-weight:bold;">OFF</span>
-                    <button class="btn-outline mt-1" onclick="appAdmin.toggleAutoApprove()">Toggle Auto Approve</button>
+                    <strong>Auto Approve Posts:</strong> 
+                    <span id="auto-app-status-text" style="color:var(--primary); font-weight:bold; margin-left: 10px;">OFF</span>
+                    <button class="btn-outline mt-1" style="width:100%;" onclick="appAdmin.toggleAutoApprove()">Washa / Zima Auto Approve</button>
                 </div>
+                
                 <div class="admin-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                     <button class="btn-outline" onclick="appAdmin.renderPending()">Pending Queue</button>
                     <button class="btn-outline" onclick="appAdmin.renderUsers()">Manage Users</button>
+                    <button class="btn-outline" style="border-color:#d4af37; color:#d4af37;" onclick="appAdmin.renderPremiumReq()">VIP Requests</button>
+                    <button class="btn-outline" style="border-color:var(--success); color:var(--success);" onclick="appAdmin.renderPaymentSettings()">Pay Settings</button>
                     <button class="btn-outline" onclick="appAdmin.renderAnnouncements()">Announcements</button>
                     <button class="btn-outline" onclick="appAdmin.renderReports()">Bug Reports</button>
                     <button class="btn-outline" onclick="appAdmin.renderAppeals()" style="grid-column: span 2; border-color:var(--primary); color:var(--primary);">Block Appeals</button>
                 </div>
-                <div id="admin-content-area" class="card mt-1">Select an option above.</div>
+                
+                <div id="admin-content-area" class="card mt-1" style="min-height: 200px;">Select an option above.</div>
             </div>
+
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="router.navigate('home')">🏠<span data-i18n="navHome">Nyumbani</span></button>
-            <button class="nav-item" onclick="router.navigate('search')">🔍<span data-i18n="navSearch">Tafuta</span></button>
-            <button class="nav-item create-btn" onclick="router.navigate('create')"><div class="plus-icon">+</div></button>
+            <button class="nav-item active" onclick="router.navigate('home')">
+                🏠<span data-i18n="navHome">Nyumbani</span>
+            </button>
+            <button class="nav-item" onclick="router.navigate('search')">
+                🔍<span data-i18n="navSearch">Tafuta</span>
+            </button>
+            <button class="nav-item create-btn" onclick="router.navigate('create')">
+                <div class="plus-icon">+</div>
+            </button>
             <button class="nav-item" onclick="window.location.href='chat.html'" style="position:relative;">
                 💬<span data-i18n="navChat">Chat</span>
-                <span id="chat-badge" class="badge" style="display:none; position:absolute; top:-5px; right:10px; font-weight:bold;">0</span>
+                <span id="chat-badge" class="badge chat-badge" style="display:none; background:var(--success);">0</span>
             </button>
-            <button class="nav-item" onclick="router.navigate('profile')">👤<span data-i18n="navProfile">Wasifu</span></button>
+            <button class="nav-item" onclick="router.navigate('profile')">
+                👤<span data-i18n="navProfile">Wasifu</span>
+            </button>
         </nav>
+    </div>
+
+    <div id="comment-modal" class="modal">
+        <div class="modal-content card" style="max-height: 80vh; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 15px;">Comments</h3>
+            <div id="comments-list" style="flex: 1; overflow-y: auto; margin-bottom: 15px;"></div>
+            <div class="comment-input-area" style="display:flex; gap:10px;">
+                <input type="text" id="comment-input" placeholder="Andika comment..." style="margin-bottom:0; flex:1;">
+                <button class="btn-primary" style="width:auto; padding:0 20px;" onclick="appFeatures.addComment()">Tuma</button>
+            </div>
+            <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('comment-modal')" data-i18n="closeBtn">Funga</button>
+        </div>
     </div>
 
     <div id="settings-modal" class="modal">
         <div class="modal-content card" style="text-align:center;">
-            <h3 data-i18n="settingsTitle">Mipangilio</h3>
-            <div style="margin: 15px 0; background: var(--bg-color); padding: 10px; border-radius: 12px;">
-                <label style="font-weight:bold; display:block; margin-bottom:5px;">🌍 Lugha / Language</label>
-                <select id="settings-lang" onchange="appFeatures.changeLang(this.value)" class="custom-select" style="margin-bottom:0;">
-                    <option value="sw">Kiswahili</option>
-                    <option value="en">English</option>
-                </select>
-            </div>
+            <h3 data-i18n="settingsTitle" style="margin-bottom: 15px;">Mipangilio</h3>
+            
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.toggleTheme()" data-i18n="toggleTheme">🌓 Badili Muonekano</button>
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); ui.showModal('bug-modal');" data-i18n="reportBugBtn">🐞 Ripoti Tatizo</button>
-            <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); appFeatures.renderMyReports();" data-i18n="myReportsBtn">📋 Ripoti Zangu</button>
-            <button id="btn-appeal" class="btn-outline mt-1" style="width:100%; display:none; background:#fff3cd; color:#856404; border-color:#856404;" onclick="ui.hideModal('settings-modal'); ui.showModal('appeal-modal');">⚖️ Request Account Review</button>
-            <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
-            <button class="btn-outline" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="ui.hideModal('settings-modal'); appAuth.logout();" data-i18n="logoutBtn">🚪 Toka</button>
+            <button id="btn-appeal" class="btn-outline mt-1" style="width:100%; display:none; background:#fff3cd; color:#856404; border-color:#856404;" onclick="ui.hideModal('settings-modal'); ui.showModal('appeal-modal');">⚖️ Omba Kufunguliwa Block</button>
+            
+            <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
+            <button class="btn-outline" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="appAuth.logout();" data-i18n="logoutBtn">🚪 Toka (Logout)</button>
             <button class="btn-outline mt-1" style="width:100%; border:none;" onclick="ui.hideModal('settings-modal')" data-i18n="closeBtn">Funga</button>
         </div>
     </div>
 
-    <div id="appeal-modal" class="modal"><div class="modal-content card"><h3>Request Review</h3><textarea id="appeal-text" placeholder="Write your appeal here..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('appeal-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appFeatures.submitAppeal()">Submit</button></div></div></div>
-    <div id="bug-modal" class="modal"><div class="modal-content card"><h3 data-i18n="reportBugBtn">Ripoti Tatizo</h3><textarea id="bug-text" placeholder="Describe the issue..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('bug-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appFeatures.submitReport()">Submit</button></div></div></div>
-    <div id="edit-profile-modal" class="modal"><div class="modal-content card"><h3 data-i18n="editProfileBtn">Badili Wasifu</h3><input type="text" id="edit-user" placeholder="Username"><textarea id="edit-bio" placeholder="Bio"></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('edit-profile-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appFeatures.saveProfile()">Save</button></div></div></div>
-    <div id="comment-modal" class="modal"><div class="modal-content card"><h3>Comments</h3><div id="comments-list"></div><div class="comment-input-area"><input type="text" id="comment-input" placeholder="..."><button class="btn-primary" onclick="appFeatures.addComment()">Post</button></div><button class="btn-outline mt-1" onclick="ui.hideModal('comment-modal')" data-i18n="closeBtn">Close</button></div></div>
-    <div id="announcement-modal" class="modal"><div class="modal-content card"><h3>New Announcement</h3><textarea id="announcement-text" placeholder="Write global announcement..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('announcement-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appAdmin.postAnnouncement()">Send</button></div></div></div>
+    <div id="edit-profile-modal" class="modal">
+        <div class="modal-content card">
+            <h3 data-i18n="editProfileBtn" style="margin-bottom: 15px;">Badili Wasifu</h3>
+            <input type="text" id="edit-user" placeholder="Username">
+            <textarea id="edit-bio" placeholder="Bio"></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-outline" style="flex:1;" onclick="ui.hideModal('edit-profile-modal')" data-i18n="closeBtn">Ghairi</button>
+                <button class="btn-primary" style="flex:1;" onclick="appFeatures.saveProfile()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bug-modal" class="modal">
+        <div class="modal-content card">
+            <h3 data-i18n="reportBugBtn" style="margin-bottom: 15px;">Ripoti Tatizo</h3>
+            <textarea id="bug-text" placeholder="Elezea tatizo lako hapa..."></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-outline" style="flex:1;" onclick="ui.hideModal('bug-modal')" data-i18n="closeBtn">Ghairi</button>
+                <button class="btn-primary" style="flex:1;" onclick="appFeatures.submitReport()">Tuma Ripoti</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="announcement-modal" class="modal">
+        <div class="modal-content card">
+            <h3 style="margin-bottom: 15px;">New Announcement</h3>
+            <textarea id="announcement-text" placeholder="Write global announcement..."></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-outline" style="flex:1;" onclick="ui.hideModal('announcement-modal')">Cancel</button>
+                <button class="btn-primary" style="flex:1;" onclick="appAdmin.postAnnouncement()">Send</button>
+            </div>
+        </div>
+    </div>
+
 </div>
+
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js'); });
     }
     if(localStorage.getItem('st_theme') === 'dark') document.body.classList.add('dark');
 </script>
-
 <script type="module" src="app.js"></script>
 </body>
 </html>
