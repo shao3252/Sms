@@ -14,14 +14,12 @@
 
     <div id="auth-screen" class="screen active">
         <div class="auth-container">
-            
             <div class="lang-switcher-auth">
                 🌍 <select id="auth-lang" onchange="appFeatures.changeLang(this.value)">
                     <option value="sw">Kiswahili</option>
                     <option value="en">English</option>
                 </select>
             </div>
-
             <h1 class="logo-text">Sms Tamu 💖</h1>
             <p class="subtitle" data-i18n="welcomeSub">Shiriki meseji tamu za mapenzi</p>
             
@@ -46,11 +44,7 @@
 
     <div id="main-screen" class="screen">
         <header class="app-header">
-            <h2 class="logo-text-small">Sms Tamu</h2>
-            <div class="header-actions">
-                <button class="icon-btn" id="admin-btn" style="display:none;" onclick="router.navigate('admin')">🛡️</button>
-                <button class="icon-btn" onclick="appFeatures.openSettings()">⚙️</button>
-            </div>
+            <h2 class="logo-text-small" style="margin: 0 auto;">Sms Tamu 💖</h2>
         </header>
 
         <div id="announcement-bar" class="announcement-bar" style="display:none;">
@@ -103,6 +97,12 @@
 
             <div id="view-profile" class="view">
                 <div class="profile-header card">
+                    
+                    <div style="position: absolute; top: 15px; right: 15px; display: flex; gap: 10px;">
+                        <button class="icon-btn" id="admin-btn" style="display:none; font-size:1.2rem;" onclick="router.navigate('admin')">🛡️</button>
+                        <button class="icon-btn" style="font-size:1.2rem;" onclick="appFeatures.openSettings()">⚙️</button>
+                    </div>
+
                     <div class="prof-img-wrapper" onclick="document.getElementById('prof-pic-upload').click()">
                         <img id="my-prof-pic" src="" alt="Profile">
                         <div class="edit-pic-overlay">📷</div>
@@ -154,6 +154,7 @@
             </div>
 
             <div id="view-admin" class="view">
+                <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('profile')">🔙</button>
                 <h3>Admin Dashboard</h3>
                 <div class="admin-grid">
                     <button class="btn-outline" onclick="appAdmin.renderPending()">Pending Queue</button>
@@ -170,7 +171,7 @@
             <button class="nav-item active" onclick="router.navigate('home')">🏠<span data-i18n="navHome">Nyumbani</span></button>
             <button class="nav-item" onclick="router.navigate('search')">🔍<span data-i18n="navSearch">Tafuta</span></button>
             <button class="nav-item create-btn" onclick="router.navigate('create')"><div class="plus-icon">+</div></button>
-            <button class="nav-item" onclick="router.navigate('notify')">🔔<span class="badge" id="notif-badge" style="display:none"></span><span data-i18n="navAlerts">Taarifa</span></button>
+            <button class="nav-item" onclick="window.location.href='chat.html'">💬<span data-i18n="navChat">Chat</span></button>
             <button class="nav-item" onclick="router.navigate('profile')">👤<span data-i18n="navProfile">Wasifu</span></button>
         </nav>
     </div>
@@ -187,6 +188,8 @@
                 </select>
             </div>
 
+            <button class="btn-outline mt-1" style="width:100%" onclick="ui.toggleTheme()" data-i18n="toggleTheme">🌓 Badili Muonekano</button>
+
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); ui.showModal('bug-modal');" data-i18n="reportBugBtn">🐞 Ripoti Tatizo</button>
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); appFeatures.renderMyReports();" data-i18n="myReportsBtn">📋 Ripoti Zangu</button>
             <button id="btn-appeal" class="btn-outline mt-1" style="width:100%; display:none; background:#fff3cd; color:#856404; border-color:#856404;" onclick="ui.hideModal('settings-modal'); ui.showModal('appeal-modal');">⚖️ Request Account Review</button>
@@ -196,63 +199,11 @@
         </div>
     </div>
 
-    <div id="appeal-modal" class="modal">
-        <div class="modal-content card">
-            <h3>Request Review</h3>
-            <p style="font-size:0.9rem; color:var(--danger); margin-bottom:10px;">Your account is blocked. Write to the Admin to request unblocking.</p>
-            <textarea id="appeal-text" placeholder="Write your appeal here..."></textarea>
-            <div class="modal-actions">
-                <button class="btn-outline" onclick="ui.hideModal('appeal-modal')" data-i18n="closeBtn">Cancel</button>
-                <button class="btn-primary" onclick="appFeatures.submitAppeal()">Submit</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="bug-modal" class="modal">
-        <div class="modal-content card">
-            <h3 data-i18n="reportBugBtn">Ripoti Tatizo</h3>
-            <textarea id="bug-text" placeholder="Describe the issue..."></textarea>
-            <div class="modal-actions">
-                <button class="btn-outline" onclick="ui.hideModal('bug-modal')" data-i18n="closeBtn">Cancel</button>
-                <button class="btn-primary" onclick="appFeatures.submitReport()">Submit</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="edit-profile-modal" class="modal">
-        <div class="modal-content card">
-            <h3 data-i18n="editProfileBtn">Badili Wasifu</h3>
-            <input type="text" id="edit-user" placeholder="Username">
-            <textarea id="edit-bio" placeholder="Bio"></textarea>
-            <div class="modal-actions">
-                <button class="btn-outline" onclick="ui.hideModal('edit-profile-modal')" data-i18n="closeBtn">Cancel</button>
-                <button class="btn-primary" onclick="appFeatures.saveProfile()">Save</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="comment-modal" class="modal">
-        <div class="modal-content card">
-            <h3>Comments</h3>
-            <div id="comments-list"></div>
-            <div class="comment-input-area">
-                <input type="text" id="comment-input" placeholder="...">
-                <button class="btn-primary" onclick="appFeatures.addComment()">Post</button>
-            </div>
-            <button class="btn-outline mt-1" onclick="ui.hideModal('comment-modal')" data-i18n="closeBtn">Close</button>
-        </div>
-    </div>
-
-    <div id="announcement-modal" class="modal">
-        <div class="modal-content card">
-            <h3>New Announcement</h3>
-            <textarea id="announcement-text" placeholder="Write global announcement..."></textarea>
-            <div class="modal-actions">
-                <button class="btn-outline" onclick="ui.hideModal('announcement-modal')" data-i18n="closeBtn">Cancel</button>
-                <button class="btn-primary" onclick="appAdmin.postAnnouncement()">Send</button>
-            </div>
-        </div>
-    </div>
+    <div id="appeal-modal" class="modal"><div class="modal-content card"><h3>Request Review</h3><textarea id="appeal-text" placeholder="Write your appeal here..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('appeal-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appFeatures.submitAppeal()">Submit</button></div></div></div>
+    <div id="bug-modal" class="modal"><div class="modal-content card"><h3 data-i18n="reportBugBtn">Ripoti Tatizo</h3><textarea id="bug-text" placeholder="Describe the issue..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('bug-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appFeatures.submitReport()">Submit</button></div></div></div>
+    <div id="edit-profile-modal" class="modal"><div class="modal-content card"><h3 data-i18n="editProfileBtn">Badili Wasifu</h3><input type="text" id="edit-user" placeholder="Username"><textarea id="edit-bio" placeholder="Bio"></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('edit-profile-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appFeatures.saveProfile()">Save</button></div></div></div>
+    <div id="comment-modal" class="modal"><div class="modal-content card"><h3>Comments</h3><div id="comments-list"></div><div class="comment-input-area"><input type="text" id="comment-input" placeholder="..."><button class="btn-primary" onclick="appFeatures.addComment()">Post</button></div><button class="btn-outline mt-1" onclick="ui.hideModal('comment-modal')" data-i18n="closeBtn">Close</button></div></div>
+    <div id="announcement-modal" class="modal"><div class="modal-content card"><h3>New Announcement</h3><textarea id="announcement-text" placeholder="Write global announcement..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('announcement-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appAdmin.postAnnouncement()">Send</button></div></div></div>
 </div>
 
 <script type="module" src="app.js"></script>
