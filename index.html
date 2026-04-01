@@ -205,6 +205,15 @@
     <div id="comment-modal" class="modal"><div class="modal-content card"><h3>Comments</h3><div id="comments-list"></div><div class="comment-input-area"><input type="text" id="comment-input" placeholder="..."><button class="btn-primary" onclick="appFeatures.addComment()">Post</button></div><button class="btn-outline mt-1" onclick="ui.hideModal('comment-modal')" data-i18n="closeBtn">Close</button></div></div>
     <div id="announcement-modal" class="modal"><div class="modal-content card"><h3>New Announcement</h3><textarea id="announcement-text" placeholder="Write global announcement..."></textarea><div class="modal-actions"><button class="btn-outline" onclick="ui.hideModal('announcement-modal')" data-i18n="closeBtn">Cancel</button><button class="btn-primary" onclick="appAdmin.postAnnouncement()">Send</button></div></div></div>
 </div>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('Service Worker Imekubali!', reg.scope))
+                .catch(err => console.log('Service Worker Imekataa:', err));
+        });
+    }
+</script>
 
 <script type="module" src="app.js"></script>
 </body>
