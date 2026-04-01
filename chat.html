@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sms Tamu - Chats</title>
+    <title>Sms Tamu - Global Chat</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,43 +12,51 @@
     <div id="toast-container"></div>
     <div class="chat-container">
         
-        <div class="chat-header" style="background:var(--nav-bg); padding:10px 15px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px;">
-            <button class="icon-btn" style="font-size:1.2rem;" onclick="window.location.href='index.html'">🔙</button>
-            <img id="group-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" style="width:40px; height:40px; border-radius:50%; border:2px solid var(--primary); object-fit:cover;" onclick="chatSystem.editGroupImage()">
+        <div class="chat-header" style="background:var(--nav-bg); padding:15px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:15px; position:sticky; top:0; z-index:10;">
+            <button class="icon-btn" style="font-size:1.2rem; background:none; border:none; cursor:pointer;" onclick="window.location.href='index.html'">🔙</button>
+            
+            <img id="group-pic" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" class="group-avatar" onclick="chatSystem.editGroupImage()" style="cursor:pointer;">
+            
             <div style="flex:1; cursor:pointer;" onclick="chatSystem.showGroupInfo()">
-                <h3 id="group-title" style="margin:0; font-size:1.1rem; display:flex; align-items:center;">🌍 Global Group</h3>
-                <span id="group-status" style="font-size:0.75rem; color:var(--success);">Tupo Online</span>
+                <h3 id="group-title" style="margin:0; font-size:1.1rem;">🌍 Global Group</h3>
+                <span id="group-status" style="font-size:0.8rem; color:var(--success);">Tupo Online</span>
             </div>
-            <button id="admin-lock-btn" class="icon-btn" style="display:none; font-size:1.1rem;" onclick="chatSystem.toggleGroupLock()">🔓</button>
+            
+            <button id="admin-lock-btn" class="icon-btn" style="display:none; font-size:1.2rem;" onclick="chatSystem.toggleGroupLock()">🔓</button>
         </div>
 
-        <div id="pinned-bar" style="display:none; background:var(--card-bg); padding:8px 15px; border-bottom:1px solid var(--border); font-size:0.8rem; cursor:pointer;" onclick="chatSystem.showAllPinned()">
+        <div id="pinned-bar" style="display:none; background:var(--card-bg); padding:10px 15px; border-bottom:1px solid var(--border); font-size:0.85rem; border-left:4px solid var(--primary); cursor:pointer;" onclick="chatSystem.showAllPinned()">
             <strong style="color:var(--primary);">📌 Pinned (<span id="pin-count">0</span>):</strong> Tap to view
         </div>
 
         <div id="global-chat-box" class="chat-box"></div>
 
-        <div class="chat-input-area" style="padding:10px; background:var(--card-bg); border-top:1px solid var(--border);">
-            <div id="reply-preview" style="display:none; background:var(--bg-color); border-left:4px solid var(--primary); padding:8px; border-radius:8px; margin-bottom:8px; position:relative;">
-                <strong id="reply-name" style="color:var(--primary); font-size:0.8rem;"></strong>
-                <div id="reply-text" style="color:var(--text-muted); font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
-                <button onclick="chatSystem.cancelReply()" style="position:absolute; top:5px; right:5px; border:none; background:none; color:var(--text-muted);">✖</button>
+        <div class="chat-input-area" style="position:sticky; bottom:0; z-index:10;">
+            <div id="reply-preview" class="reply-preview">
+                <strong id="reply-name" style="color:var(--primary); font-size:0.85rem;"></strong>
+                <div id="reply-text" style="color:var(--text-muted); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+                <button onclick="chatSystem.cancelReply()" style="position:absolute; top:8px; right:8px; border:none; background:none; color:var(--text-muted); font-size:1rem; cursor:pointer;">✖</button>
             </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-                <input type="text" id="chat-msg-input" placeholder="Andika ujumbe..." style="flex:1; margin-bottom:0; padding:12px; border-radius:20px; border:1px solid var(--border);">
-                <button onclick="chatSystem.sendGlobalMessage()" style="width:45px; height:45px; border-radius:50%; background:var(--primary-gradient); color:white; border:none; font-size:1.2rem;">➤</button>
+            <div class="input-row">
+                <input type="text" id="chat-msg-input" placeholder="Andika ujumbe...">
+                <button onclick="chatSystem.sendGlobalMessage()">➤</button>
             </div>
         </div>
     </div>
 
     <div id="msg-options-modal" class="modal">
         <div class="modal-content card" style="margin-top:auto; border-bottom-left-radius:0; border-bottom-right-radius:0;">
-            <button class="btn-outline" style="width:100%; text-align:left; margin-bottom:8px; border:none;" onclick="chatSystem.actionReply()">↩️ Reply</button>
-            <button id="opt-profile" class="btn-outline" style="width:100%; text-align:left; margin-bottom:8px; border:none;" onclick="chatSystem.actionViewProfile()">👤 View Profile</button>
-            <button id="opt-pin" class="btn-outline" style="width:100%; text-align:left; margin-bottom:8px; display:none; border:none;" onclick="chatSystem.actionPin()">📌 Pin Message</button>
-            <button id="opt-admin-make" class="btn-outline" style="width:100%; text-align:left; margin-bottom:8px; display:none; color:var(--secondary); border:none;" onclick="chatSystem.actionMakeAdmin()">👑 Make Group Admin</button>
-            <button id="opt-block" class="btn-outline" style="width:100%; text-align:left; margin-bottom:8px; display:none; color:var(--danger); border:none;" onclick="chatSystem.actionBlockUser()">🚫 Block User</button>
-            <button id="opt-delete" class="btn-outline" style="width:100%; text-align:left; color:var(--danger); display:none; border:none;" onclick="chatSystem.actionDelete()">🗑️ Delete Message</button>
+            <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">Options</h3>
+            
+            <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionReply()">↩️ Reply</button>
+            <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionCopy()">📋 Copy Text</button>
+            <button id="opt-profile" class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionViewProfile()">👤 View Profile</button>
+            
+            <button id="opt-pin" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.actionPin()">📌 Pin Message</button>
+            <button id="opt-admin-make" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--secondary);" onclick="chatSystem.actionMakeAdmin()">👑 Make Group Admin</button>
+            <button id="opt-block" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionBlockUser()">🚫 Block User</button>
+            <button id="opt-delete" class="btn-outline" style="width:100%; display:none; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.actionDelete()">🗑️ Delete Message</button>
+            
             <button class="btn-primary mt-1" onclick="ui.hideModal('msg-options-modal')">Ghairi</button>
         </div>
     </div>
