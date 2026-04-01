@@ -54,6 +54,10 @@
             </div>
         </header>
 
+        <div id="announcement-bar" class="announcement-bar" style="display:none;">
+            <marquee id="announcement-text" scrollamount="5"></marquee>
+        </div>
+
         <div class="content-area">
             <div id="view-home" class="view active">
                 <div class="category-scroll" id="feed-categories">
@@ -94,7 +98,7 @@
             </div>
 
             <div id="view-single-post" class="view">
-                <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('notify')">🔙</button>
+                <button class="btn-outline" style="margin-bottom:15px; padding:5px 15px;" onclick="router.navigate('home')">🔙</button>
                 <div id="single-post-container"></div>
             </div>
 
