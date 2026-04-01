@@ -19,8 +19,8 @@ const db = getFirestore(app);
 
 let currentUser = JSON.parse(localStorage.getItem('st_session'));
 let isGroupOpen = true;
-let selectedMsg = null; // Inashikilia data ya meseji iliyokandamizwa
-let pressTimer = null; // Timer ya Long Press
+let selectedMsg = null; 
+let pressTimer = null; 
 
 if (!currentUser) window.location.href = 'index.html';
 
@@ -41,31 +41,61 @@ window.ui = {
 
 window.chatSystem = {
     init: async () => {
-        if(currentUser.role === 'admin') {
+        const isAdmin = currentUser.role === 'admin';
+
+        if(isAdmin) {
             document.getElementById('admin-group-controls').style.display = 'block';
+            document.getElementById('edit-group-btn').style.display = 'block';
         }
 
+        // 1. SIKILIZA MABADILIKO YA GROUP (Locked/Open, Pinned Msg, Group Name)
         const groupRef = doc(db, "system", "group_settings");
         onSnapshot(groupRef, (snap) => {
             if(snap.exists()) {
-                isGroupOpen = snap.data().isOpen;
+                const data = snap.data();
+                isGroupOpen = data.isOpen !== false; // Default true
+                
+                // Group Name Update
+                document.getElementById('group-title').innerText = data.groupName || "🌍 Global Web Group";
+
+                // Pinned Message Update
+                if(data.pinnedMessage) {
+                    document.getElementById('pinned-msg-container').style.display = 'block';
+                    document.getElementById('pinned-msg-text').innerText = data.pinnedMessage;
+                    document.getElementById('unpin-btn').style.display = isAdmin ? 'block' : 'none';
+                } else {
+                    document.getElementById('pinned-msg-container').style.display = 'none';
+                }
+
+                // Input Status (Admin Bypass Fix)
                 const badge = document.getElementById('group-state-badge');
+                const inputField = document.getElementById('chat-msg-input');
+
                 if(isGroupOpen) {
                     badge.innerText = "Open";
                     badge.style.background = "var(--success)";
-                    document.getElementById('chat-msg-input').disabled = false;
-                    document.getElementById('chat-msg-input').placeholder = "Type a message...";
+                    inputField.disabled = false;
+                    inputField.placeholder = "Type a message...";
                 } else {
                     badge.innerText = "Locked";
                     badge.style.background = "var(--danger)";
-                    document.getElementById('chat-msg-input').disabled = true;
-                    document.getElementById('chat-msg-input').placeholder = "Admin locked the group.";
+                    
+                    if(isAdmin) {
+                        // ADMIN BYPASS: Anaweza kuandika hata kama imefungwa
+                        inputField.disabled = false;
+                        inputField.placeholder = "Admin Bypass (Locked)...";
+                    } else {
+                        // Watumiaji wa kawaida wanazuiwa
+                        inputField.disabled = true;
+                        inputField.placeholder = "Admin has locked the group.";
+                    }
                 }
             } else {
-                if(currentUser.role === 'admin') setDoc(groupRef, { isOpen: true });
+                if(isAdmin) setDoc(groupRef, { isOpen: true, groupName: "🌍 Global Web Group", pinnedMessage: "" });
             }
         });
 
+        // 2. SIKILIZA MESEJI ZINAZOINGIA
         const q = query(collection(db, "global_chat"), orderBy("timestamp", "asc"), limit(100));
         onSnapshot(q, (snap) => {
             const box = document.getElementById('global-chat-box');
@@ -80,12 +110,10 @@ window.chatSystem = {
                 const msg = { id: docSnap.id, ...docSnap.data() };
                 const isMine = msg.uId === currentUser.id;
                 
-                // Formulate time logic e.g., 16:04
                 const date = new Date(msg.timestamp);
                 const timeString = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 const safeText = encodeURIComponent(msg.text);
 
-                // KANDAMIZA (Long Press) EVENTS
                 const pressEvents = `ontouchstart="chatSystem.startPress('${msg.id}', '${msg.uId}', '${safeText}')" ontouchend="chatSystem.cancelPress()" onmousedown="chatSystem.startPress('${msg.id}', '${msg.uId}', '${safeText}')" onmouseup="chatSystem.cancelPress()" onmouseleave="chatSystem.cancelPress()"`;
 
                 box.innerHTML += `
@@ -104,6 +132,7 @@ window.chatSystem = {
 
     sendGlobalMessage: async () => {
         if(currentUser.isBlocked) return ui.showToast("Your account is restricted.", 'error');
+        // Check imerekebishwa ili isimzuie Admin
         if(!isGroupOpen && currentUser.role !== 'admin') return ui.showToast("Group locked.", 'error');
 
         const input = document.getElementById('chat-msg-input');
@@ -124,13 +153,23 @@ window.chatSystem = {
     toggleGroupStatus: async () => {
         const groupRef = doc(db, "system", "group_settings");
         await updateDoc(groupRef, { isOpen: !isGroupOpen });
+        ui.showToast(isGroupOpen ? "Group Locked" : "Group Opened", "info");
     },
 
-    // MFUMO WA KUKANDAMIZA (LONG PRESS LOGIC)
+    editGroupInfo: async () => {
+        const newName = prompt("Enter new Group Name:");
+        if(newName && newName.trim() !== "") {
+            const groupRef = doc(db, "system", "group_settings");
+            await updateDoc(groupRef, { groupName: newName.trim() });
+            ui.showToast("Group Name Updated", "success");
+        }
+    },
+
+    // KUKANDAMIZA (LONG PRESS) LOGIC
     startPress: (msgId, uId, text) => {
         pressTimer = setTimeout(() => {
             chatSystem.showOptions(msgId, uId, text);
-        }, 500); // 500ms (Nusu sekunde) ya kukandamiza inatosha kufungua Menu
+        }, 500); 
     },
 
     cancelPress: () => {
@@ -142,12 +181,15 @@ window.chatSystem = {
         const isMine = uId === currentUser.id;
         const isAdmin = currentUser.role === 'admin';
 
+        // Visibility ya vifungo kulingana na cheo
         document.getElementById('opt-edit').style.display = isMine ? 'block' : 'none';
         document.getElementById('opt-delete').style.display = (isMine || isAdmin) ? 'block' : 'none';
+        document.getElementById('opt-pin').style.display = isAdmin ? 'block' : 'none';
         
-        // Vibrate simu kujulisha imekubali kama inasapoti
+        // Option ya kumpa U-admin (Itaonekana kama wewe ni admin na msg ni ya mtu mwingine)
+        document.getElementById('opt-make-admin').style.display = (isAdmin && !isMine) ? 'block' : 'none';
+        
         if(navigator.vibrate) navigator.vibrate(50);
-        
         ui.showModal('msg-options-modal');
     },
 
@@ -173,9 +215,32 @@ window.chatSystem = {
             await deleteDoc(doc(db, "global_chat", selectedMsg.id));
             ui.showToast('Deleted', 'success');
         }
+    },
+
+    actionPin: async () => {
+        ui.hideModal('msg-options-modal');
+        const groupRef = doc(db, "system", "group_settings");
+        await updateDoc(groupRef, { pinnedMessage: selectedMsg.text });
+        ui.showToast('Message Pinned', 'success');
+    },
+
+    actionUnpin: async () => {
+        if(confirm("Remove pinned message?")) {
+            const groupRef = doc(db, "system", "group_settings");
+            await updateDoc(groupRef, { pinnedMessage: "" });
+        }
+    },
+
+    actionMakeAdmin: async () => {
+        ui.hideModal('msg-options-modal');
+        if(confirm("Are you sure you want to promote this user to Admin?")) {
+            await updateDoc(doc(db, "users", selectedMsg.uId), { role: "admin", verified: true });
+            ui.showToast('User Promoted to Admin! 👑', 'success');
+        }
     }
 };
 
+// Ruhusu kutuma kwa kubonyeza Enter
 document.getElementById('chat-msg-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') chatSystem.sendGlobalMessage();
 });
