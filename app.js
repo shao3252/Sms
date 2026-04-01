@@ -17,15 +17,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Offline Mode
-enableIndexedDbPersistence(db).catch(() => {});
+// Offline Mode Safi
+enableIndexedDbPersistence(db).catch((err) => {
+    console.log("Offline mode error: ", err);
+});
 
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
 let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
 
-// Hii inasaidia kusoma Verified Badges na Premium Status papo hapo kwa kila user
 window.usersCache = {};
 
 window.systemSettings = { 
@@ -75,24 +76,29 @@ const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 window.ui = {
     showToast: (m, type = 'info') => { 
         const c = document.getElementById('toast-container'); 
+        if(!c) return;
         const tDiv = document.createElement('div'); 
         tDiv.className = `toast ${type}`; 
         tDiv.innerText = m; 
         c.appendChild(tDiv); 
         setTimeout(() => tDiv.remove(), 3500); 
     },
+
     toggleTheme: () => { 
         const isDark = document.body.classList.toggle('dark'); 
         localStorage.setItem('st_theme', isDark ? 'dark' : 'light'); 
     },
+
     showModal: (id) => {
         const modal = document.getElementById(id);
         if(modal) modal.classList.add('active');
     },
+
     hideModal: (id) => {
         const modal = document.getElementById(id);
         if(modal) modal.classList.remove('active');
     },
+
     createFallingHeart: () => { 
         const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨']; 
         const heart = document.createElement('div'); 
@@ -116,6 +122,7 @@ const timeAgo = (ts) => {
     return "Hivi punde"; 
 };
 
+// CHECK CHAT UNREAD GREEN BADGE
 const checkNewMessages = () => {
     const lastSeen = parseInt(localStorage.getItem('st_chat_last_seen')) || 0;
     const q = query(collection(db, "global_chat"), where("timestamp", ">", lastSeen));
@@ -146,9 +153,9 @@ window.router = {
             document.querySelectorAll('.bottom-nav .nav-item')[navMap[viewId]].classList.add('active');
         }
         
-        if (viewId === 'home') appFeatures.renderFeed();
-        if (viewId === 'profile') appFeatures.renderProfile();
-        if (viewId === 'admin') appAdmin.renderPending();
+        if (viewId === 'home') window.appFeatures.renderFeed();
+        if (viewId === 'profile') window.appFeatures.renderProfile();
+        if (viewId === 'admin') window.appAdmin.renderPending();
         window.scrollTo(0,0);
     }
 };
@@ -157,7 +164,7 @@ window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim(); 
         const pass = document.getElementById('login-pass').value;
-        if (!email || !pass) return ui.showToast('Ingiza email na password', 'error');
+        if (!email || !pass) return window.ui.showToast('Ingiza email na password', 'error');
         
         const q = query(collection(db, "users"), where("email", "==", email), where("password", "==", pass));
         const snap = await getDocs(q);
@@ -166,16 +173,19 @@ window.appAuth = {
             const uDoc = snap.docs[0]; 
             let uData = uDoc.data();
             
+            // Auto promote Admin if email matches
             if (uData.email === 'shaolindown3252@gmail.com' && uData.role !== 'admin') { 
                 await updateDoc(doc(db, "users", uDoc.id), { role: 'admin', verified: true, isPremium: true }); 
-                uData.role = 'admin'; uData.verified = true; uData.isPremium = true;
+                uData.role = 'admin'; 
+                uData.verified = true; 
+                uData.isPremium = true;
             }
             
             currentUser = { id: uDoc.id, ...uData }; 
             localStorage.setItem('st_session', JSON.stringify(currentUser)); 
             location.reload();
         } else {
-            ui.showToast('Login imefeli. Hakikisha taarifa zako.', 'error');
+            window.ui.showToast('Login imefeli. Hakikisha taarifa zako.', 'error');
         }
     },
     
@@ -184,10 +194,10 @@ window.appAuth = {
         const email = document.getElementById('reg-email').value.trim(); 
         const pass = document.getElementById('reg-pass').value;
         
-        if (!user || !email || !pass) return ui.showToast('Jaza sehemu zote', 'error');
+        if (!user || !email || !pass) return window.ui.showToast('Jaza sehemu zote', 'error');
         
         const checkSnap = await getDocs(query(collection(db, "users"), where("email", "==", email)));
-        if(!checkSnap.empty) return ui.showToast('Email inatumika tayari', 'error');
+        if(!checkSnap.empty) return window.ui.showToast('Email inatumika tayari', 'error');
         
         const isAdmin = email === 'shaolindown3252@gmail.com';
         
@@ -207,8 +217,8 @@ window.appAuth = {
             fakeFollowers: 0 
         });
         
-        ui.showToast('Usajili umekamilika! Sasa ingia (Login).', 'success'); 
-        appAuth.toggleAuth();
+        window.ui.showToast('Usajili umekamilika! Sasa ingia (Login).', 'success'); 
+        window.appAuth.toggleAuth();
     },
     
     logout: () => { 
@@ -236,18 +246,18 @@ window.appFeatures = {
     },
     
     createPost: async () => {
-        if(currentUser.isBlocked) return ui.showToast('Akaunti Yako Imezuiwa!', 'error');
+        if(currentUser.isBlocked) return window.ui.showToast('Akaunti Yako Imezuiwa!', 'error');
         
         const text = document.getElementById('post-text').value.trim(); 
         const cat = document.getElementById('post-category').value;
-        if(!text || !cat) return ui.showToast('Chagua Kundi na uandike meseji', 'error');
+        if(!text || !cat) return window.ui.showToast('Chagua Kundi na uandike meseji', 'error');
         
         if(currentUser.role !== 'admin' && cat === 'Message Kuntu') {
-            return ui.showToast('Admin pekee ndio anaruhusiwa kupost Kuntu!', 'error');
+            return window.ui.showToast('Admin pekee ndio anaruhusiwa kupost Kuntu!', 'error');
         }
         
         if(currentUser.role !== 'admin' && isSpamText(text)) {
-            return ui.showToast('Hauruhusiwi kuweka Namba au Link yoyote!', 'error');
+            return window.ui.showToast('Hauruhusiwi kuweka Namba au Link yoyote!', 'error');
         }
 
         const uSnap = await getDoc(doc(db, "users", currentUser.id)); 
@@ -269,15 +279,14 @@ window.appFeatures = {
             fakeLikes: 0 
         });
         
-        // IKIWA NI KUNTU, TUELEKEZE KWENYE PREMIUM.HTML PAPO HAPO
         if(cat === 'Message Kuntu') {
-            ui.showToast('Posti ya VIP Kuntu imetumwa!', 'success');
+            window.ui.showToast('Posti ya Kuntu imetumwa!', 'success');
             document.getElementById('post-text').value = '';
             window.location.href = 'premium.html';
         } else {
-            ui.showToast(postStatus === 'approved' ? 'Imepostiwa Kikamilifu!' : 'Imetumwa Kusubiri Ukaguzi', 'success');
+            window.ui.showToast(postStatus === 'approved' ? 'Imepostiwa Kikamilifu!' : 'Imetumwa Kusubiri Ukaguzi', 'success');
             document.getElementById('post-text').value = ''; 
-            router.navigate('home');
+            window.router.navigate('home');
         }
     },
 
@@ -289,11 +298,11 @@ window.appFeatures = {
         const newText = prompt("Hariri Meseji:", snap.data().text);
         if(newText) {
             if(currentUser.role !== 'admin' && isSpamText(newText)) {
-                return ui.showToast('Hauruhusiwi kuweka Namba au Link!', 'error');
+                return window.ui.showToast('Hauruhusiwi kuweka Namba au Link!', 'error');
             }
             await updateDoc(pRef, { text: newText.trim() }); 
-            ui.showToast('Imerekebishwa!', 'success'); 
-            router.navigate('home');
+            window.ui.showToast('Imerekebishwa!', 'success'); 
+            window.router.navigate('home');
         }
     },
 
@@ -305,7 +314,11 @@ window.appFeatures = {
         };
         
         if (navigator.share && navigator.canShare(shareData)) {
-            try { await navigator.share(shareData); } catch (err) { console.log('User canceled share'); }
+            try { 
+                await navigator.share(shareData); 
+            } catch (err) { 
+                console.log('User canceled share'); 
+            }
         } else {
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.text)}`);
         }
@@ -313,7 +326,7 @@ window.appFeatures = {
 
     copyText: (encodedText) => { 
         navigator.clipboard.writeText(decodeURIComponent(encodedText)).then(() => {
-            ui.showToast('Imecopyiwa!', 'success');
+            window.ui.showToast('Imecopyiwa!', 'success');
         }); 
     },
     
@@ -323,7 +336,7 @@ window.appFeatures = {
         const isOwner = post.authorId === currentUser.id; 
         const isAdmin = currentUser.role === 'admin';
         
-        // Tunavuta taarifa za sasa hivi za mwandishi kutoka kwenye Live Cache!
+        // Live Cache
         const cachedUser = window.usersCache[post.authorId] || {};
         const authorVerified = cachedUser.verified !== undefined ? cachedUser.verified : post.authorVerified;
         const authorPremium = cachedUser.isPremium || false;
@@ -391,12 +404,11 @@ window.appFeatures = {
             snap.forEach(d => { 
                 const p = { id: d.id, ...d.data() }; 
                 
-                // Tunaficha Kuntu kwenye main feed
                 if (p.category === 'Message Kuntu') return;
 
                 if(p.status === 'approved' && !blocked.includes(p.authorId)) {
                     if (currentFeedCategory === 'All' || p.category === currentFeedCategory) { 
-                        c.innerHTML += appFeatures.createPostHTML(p); 
+                        c.innerHTML += window.appFeatures.createPostHTML(p); 
                         found = true; 
                     }
                 } 
@@ -412,7 +424,7 @@ window.appFeatures = {
         currentFeedCategory = cat; 
         document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active')); 
         if(event && event.target) event.target.classList.add('active'); 
-        appFeatures.renderFeed(); 
+        window.appFeatures.renderFeed(); 
     },
     
     toggleLike: async (pId) => { 
@@ -439,13 +451,13 @@ window.appFeatures = {
             await updateDoc(r, { saved: arrayUnion(pId) }); 
         } 
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
-        appFeatures.renderFeed(); 
+        window.appFeatures.renderFeed(); 
     },
     
     deletePost: async (pId) => { 
         if(confirm("Uhakika unataka kufuta posti hii?")) { 
             await deleteDoc(doc(db, "posts", pId)); 
-            router.navigate('home'); 
+            window.router.navigate('home'); 
         } 
     },
     
@@ -462,7 +474,6 @@ window.appFeatures = {
                 const canDelete = currentUser.role === 'admin' || authorId === currentUser.id || c.uId === currentUser.id;
                 const delBtn = canDelete ? `<button onclick="appFeatures.deleteComment('${pId}', ${index})" style="color:var(--danger); background:none; border:none; font-size:1.1rem; cursor:pointer;">🗑️</button>` : '';
                 
-                // Tunavuta badge mpya kutoka kwenye live cache
                 const cachedCommenter = window.usersCache[c.uId] || {};
                 const cVerified = cachedCommenter.verified !== undefined ? cachedCommenter.verified : c.verified;
                 const cPremium = cachedCommenter.isPremium || false;
@@ -479,7 +490,7 @@ window.appFeatures = {
         } else {
             l.innerHTML = "<p style='text-align:center;'>Hakuna comments bado.</p>";
         }
-        ui.showModal('comment-modal'); 
+        window.ui.showModal('comment-modal'); 
     },
 
     deleteComment: async (pId, cIndex) => {
@@ -490,8 +501,8 @@ window.appFeatures = {
             let comments = snap.data().comments;
             comments.splice(cIndex, 1); 
             await updateDoc(pRef, { comments: comments });
-            appFeatures.openComments(pId);
-            ui.showToast('Comment imefutwa', 'success');
+            window.appFeatures.openComments(pId);
+            window.ui.showToast('Comment imefutwa', 'success');
         }
     },
 
@@ -502,7 +513,7 @@ window.appFeatures = {
         if(!text) return; 
         
         if(currentUser.role !== 'admin' && isSpamText(text)) {
-            return ui.showToast('Hauruhusiwi kuweka Link au Namba', 'error');
+            return window.ui.showToast('Hauruhusiwi kuweka Link au Namba', 'error');
         }
         
         await updateDoc(doc(db, "posts", currentCommentPostId), { 
@@ -516,7 +527,7 @@ window.appFeatures = {
         }); 
         
         i.value = ''; 
-        appFeatures.openComments(currentCommentPostId); 
+        window.appFeatures.openComments(currentCommentPostId); 
     },
     
     renderProfile: () => { 
@@ -530,14 +541,14 @@ window.appFeatures = {
         document.getElementById('edit-user').value = currentUser.username; 
         document.getElementById('edit-bio').value = currentUser.bio || ""; 
         
-        appFeatures.loadProfilePosts('own'); 
+        window.appFeatures.loadProfilePosts('own'); 
     },
     
     viewUserProfile: async (uId) => { 
-        if(uId === currentUser.id) return router.navigate('profile'); 
+        if(uId === currentUser.id) return window.router.navigate('profile'); 
         
         viewingUserId = uId; 
-        const u = await appFeatures.getUser(uId); 
+        const u = await window.appFeatures.getUser(uId); 
         
         document.getElementById('other-username').innerText = u.username; 
         document.getElementById('other-verified').innerHTML = getVerifiedIcon(u.verified); 
@@ -568,14 +579,14 @@ window.appFeatures = {
         snap.forEach(d => { 
             const p = {id: d.id, ...d.data()}; 
             if(p.authorId === uId && p.status === 'approved' && p.category !== 'Message Kuntu') { 
-                c.innerHTML += appFeatures.createPostHTML(p); 
+                c.innerHTML += window.appFeatures.createPostHTML(p); 
                 found = true; 
             } 
         }); 
         
         if(!found) c.innerHTML = `<p style="text-align:center; color:var(--text-muted); margin-top:20px;">Hakuna posti alizoweka.</p>`;
         
-        router.navigate('other-profile'); 
+        window.router.navigate('other-profile'); 
     },
 
     toggleBlockUser: async () => {
@@ -587,16 +598,16 @@ window.appFeatures = {
         if(currentUser.blockedUsers.includes(viewingUserId)) {
             currentUser.blockedUsers = currentUser.blockedUsers.filter(id => id !== viewingUserId);
             await updateDoc(myRef, { blockedUsers: arrayRemove(viewingUserId) });
-            ui.showToast("Umemfungulia mtumiaji huyu.", "success");
+            window.ui.showToast("Umemfungulia mtumiaji huyu.", "success");
         } else {
             currentUser.blockedUsers.push(viewingUserId);
             await updateDoc(myRef, { blockedUsers: arrayUnion(viewingUserId) });
-            ui.showToast("Umemblock. Hutaona posti zake tena.", "info");
+            window.ui.showToast("Umemblock. Hutaona posti zake tena.", "info");
         }
         
         localStorage.setItem('st_session', JSON.stringify(currentUser));
-        appFeatures.viewUserProfile(viewingUserId); 
-        if(currentFeedCategory !== 'All') appFeatures.renderFeed(); 
+        window.appFeatures.viewUserProfile(viewingUserId); 
+        if(currentFeedCategory !== 'All') window.appFeatures.renderFeed(); 
     },
 
     toggleFollow: async () => { 
@@ -618,7 +629,7 @@ window.appFeatures = {
         } 
         
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
-        appFeatures.viewUserProfile(viewingUserId); 
+        window.appFeatures.viewUserProfile(viewingUserId); 
     },
     
     saveProfile: async () => { 
@@ -630,8 +641,8 @@ window.appFeatures = {
         currentUser.username = n; currentUser.bio = b; 
         
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
-        ui.hideModal('edit-profile-modal'); 
-        appFeatures.renderProfile(); 
+        window.ui.hideModal('edit-profile-modal'); 
+        window.appFeatures.renderProfile(); 
     },
     
     updateProfilePic: (e) => { 
@@ -653,7 +664,7 @@ window.appFeatures = {
                 await updateDoc(doc(db, "users", currentUser.id), { pic: b64 }); 
                 currentUser.pic = b64; 
                 localStorage.setItem('st_session', JSON.stringify(currentUser)); 
-                appFeatures.renderProfile(); 
+                window.appFeatures.renderProfile(); 
             }; 
             i.src = ev.target.result; 
         }; 
@@ -679,7 +690,7 @@ window.appFeatures = {
 
             if(p.status === 'approved' && !blocked.includes(p.authorId)) {
                 if((type==='own' && p.authorId===currentUser.id) || (type==='liked' && p.likes && p.likes.includes(currentUser.id)) || (type==='saved' && currentUser.saved && currentUser.saved.includes(p.id))) {
-                    c.innerHTML += appFeatures.createPostHTML(p); 
+                    c.innerHTML += window.appFeatures.createPostHTML(p); 
                     found = true;
                 }
             }
@@ -715,9 +726,22 @@ window.appFeatures = {
         pS.forEach(d => { 
             const p = {id: d.id, ...d.data()}; 
             if(p.text.toLowerCase().includes(qT) && p.category !== 'Message Kuntu' && !blocked.includes(p.authorId)) { 
-                r.innerHTML += appFeatures.createPostHTML(p); 
+                r.innerHTML += window.appFeatures.createPostHTML(p); 
             } 
         }); 
+    },
+    
+    // FIX YA SETTINGS KUFUNGUKA VIZURI SALAMA KABISA
+    openSettings: () => { 
+        try {
+            const appealBtn = document.getElementById('btn-appeal');
+            if(appealBtn && currentUser) {
+                appealBtn.style.display = currentUser.isBlocked ? 'block' : 'none'; 
+            }
+            window.ui.showModal('settings-modal'); 
+        } catch(e) {
+            console.log("Settings Modal Error: ", e);
+        }
     }
 };
 
@@ -725,18 +749,70 @@ window.appAdmin = {
     toggleAutoApprove: async () => { 
         const newVal = !window.systemSettings.autoApprove; 
         await setDoc(doc(db, "system", "app_settings"), { autoApprove: newVal }, { merge: true }); 
-        ui.showToast(`Auto Approve imekuwa ${newVal ? 'ON' : 'OFF'}`, 'success'); 
+        window.ui.showToast(`Auto Approve imekuwa ${newVal ? 'ON' : 'OFF'}`, 'success'); 
     },
     
     changeCategory: async (postId) => { 
         const newCat = prompt(`Badilisha Kundi (Category):`); 
         if(newCat) { 
             await updateDoc(doc(db, "posts", postId), { category: newCat }); 
-            ui.showToast('Kundi limebadilishwa', 'success'); 
-            appFeatures.renderFeed();
+            window.ui.showToast('Kundi limebadilishwa', 'success'); 
+            window.appFeatures.renderFeed();
         } 
     },
     
+    // FIX YA ADD FAKE LIKES
+    addFakeLikes: async (postId, currentFake) => { 
+        const amountStr = prompt("Weka idadi ya likes za kuongeza (Mfn: 100):"); 
+        if(!amountStr) return;
+        
+        const amount = parseInt(amountStr);
+        if(isNaN(amount)) {
+            return window.ui.showToast('Tafadhali weka namba sahihi!', 'error');
+        }
+
+        const current = currentFake ? parseInt(currentFake) : 0;
+        await updateDoc(doc(db, "posts", postId), { fakeLikes: current + amount }); 
+        window.ui.showToast('Likes zimeongezwa!', 'success'); 
+        
+        if(document.getElementById('view-home') && document.getElementById('view-home').classList.contains('active')) {
+            window.appFeatures.renderFeed(); 
+        }
+    },
+    
+    // FIX YA ADD FAKE FOLLOWERS
+    addFakeFollowers: async (userId, currentFake) => { 
+        const amountStr = prompt("Weka idadi ya followers kuongeza (Mfn: 1000):"); 
+        if(!amountStr) return;
+
+        const amount = parseInt(amountStr);
+        if(isNaN(amount)) {
+            return window.ui.showToast('Tafadhali weka namba sahihi!', 'error');
+        }
+
+        const current = currentFake ? parseInt(currentFake) : 0;
+        await updateDoc(doc(db, "users", userId), { fakeFollowers: current + amount }); 
+        window.ui.showToast('Followers wameongezwa!', 'success'); 
+        window.appAdmin.renderUsers(); 
+    },
+
+    // FIX YA ANNOUNCEMENT
+    postAnnouncement: async () => { 
+        const input = document.getElementById('announcement-text');
+        if(!input) return window.ui.showToast('Sehemu ya kuandika haipo!', 'error');
+
+        const text = input.value.trim(); 
+        if(!text) {
+            return window.ui.showToast('Tafadhali andika tangazo!', 'error');
+        }
+
+        await addDoc(collection(db, "announcements"), { text: text, time: Date.now() }); 
+        window.ui.hideModal('announcement-modal'); 
+        window.ui.showToast('Tangazo limetumwa kikamilifu!', 'success'); 
+        input.value = '';
+        window.appAdmin.renderAnnouncements(); 
+    },
+
     renderPending: async () => { 
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4>Posti Zinasubiri Ukaguzi</h4>'; 
@@ -746,7 +822,7 @@ window.appAdmin = {
         snap.forEach(d => { 
             const p = { id: d.id, ...d.data() }; 
             if(p.status === 'pending') {
-                area.innerHTML += appFeatures.createPostHTML(p, 'admin_queue'); 
+                area.innerHTML += window.appFeatures.createPostHTML(p, 'admin_queue'); 
                 found = true;
             }
         }); 
@@ -755,8 +831,8 @@ window.appAdmin = {
     
     moderatePost: async (postId, status) => { 
         await updateDoc(doc(db, "posts", postId), { status: status }); 
-        ui.showToast(`Posti ${status === 'approved' ? 'Imeruhusiwa' : 'Imekataliwa'}`, 'success'); 
-        appAdmin.renderPending(); 
+        window.ui.showToast(`Posti ${status === 'approved' ? 'Imeruhusiwa' : 'Imekataliwa'}`, 'success'); 
+        window.appAdmin.renderPending(); 
     },
     
     renderUsers: async () => {
@@ -770,8 +846,12 @@ window.appAdmin = {
             
             let tools = `
             <button onclick="appAdmin.toggleVerify('${u.id}', ${u.verified})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">
-                ${u.verified ? 'Toa Verify' : 'Verify (Tiki Bluu)'}
-            </button>`;
+                ${u.verified ? 'Toa Verify' : 'Verify (Tiki)'}
+            </button>
+            <button onclick="appAdmin.addFakeFollowers('${u.id}', ${u.fakeFollowers || 0})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">
+                + Followers
+            </button>
+            `;
             
             if (u.id !== currentUser.id) {
                 tools += `
@@ -797,12 +877,10 @@ window.appAdmin = {
         });
     },
     
-    // UPDATE MUHIMU: Ina update posti zote za nyuma moja kwa moja kwenye database ili zionyeshe Tiki
     toggleVerify: async (userId, currentStatus) => { 
         const newStatus = !currentStatus;
         await updateDoc(doc(db, "users", userId), { verified: newStatus }); 
         
-        // Zibadili posti za nyuma ziwe verified
         const postsQuery = query(collection(db, "posts"), where("authorId", "==", userId));
         const postsSnap = await getDocs(postsQuery);
         
@@ -810,30 +888,42 @@ window.appAdmin = {
             await updateDoc(doc(db, "posts", docSnap.id), { authorVerified: newStatus });
         }
 
-        ui.showToast(`Mtumiaji amekuwa Verified`, 'success'); 
-        appAdmin.renderUsers(); 
+        window.ui.showToast(`Mtumiaji amekuwa Verified`, 'success'); 
+        window.appAdmin.renderUsers(); 
         
-        // Refresh feed ili uiupdate UI papo hapo
         if(document.getElementById('view-home') && document.getElementById('view-home').classList.contains('active')) {
-            appFeatures.renderFeed();
+            window.appFeatures.renderFeed();
         }
     },
     
     toggleBlock: async (userId, currentStatus) => { 
         await updateDoc(doc(db, "users", userId), { isBlocked: !currentStatus }); 
-        ui.showToast('Block status imebadilika', 'success'); 
-        appAdmin.renderUsers(); 
+        window.ui.showToast('Block status imebadilika', 'success'); 
+        window.appAdmin.renderUsers(); 
     },
     
     deleteUser: async (userId) => { 
         if(confirm("Delete user? Hutaweza kurudisha taarifa zake.")) { 
             await deleteDoc(doc(db, "users", userId)); 
-            ui.showToast("Amefutwa kabisa", "success"); 
-            appAdmin.renderUsers(); 
+            window.ui.showToast("Amefutwa kabisa", "success"); 
+            window.appAdmin.renderUsers(); 
         } 
     },
     
-    // 🔥 BUG REPORTS DASHBOARD INAFANYA KAZI HAPA 🔥
+    submitReport: async () => { 
+        const input = document.getElementById('bug-text');
+        if(!input) return;
+        const text = input.value.trim();
+        if(text) { 
+            await addDoc(collection(db, "reports"), { uId: currentUser.id, username: currentUser.username, text: text, time: Date.now(), adminReply: null }); 
+            window.ui.hideModal('bug-modal'); 
+            window.ui.showToast('Ripoti imetumwa kikamilifu.', 'success'); 
+            input.value = '';
+        } else {
+            window.ui.showToast('Tafadhali andika ripoti', 'error');
+        }
+    },
+
     renderReports: async () => { 
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4>Ripoti za Watumiaji (Bug Reports)</h4>'; 
@@ -849,8 +939,8 @@ window.appAdmin = {
                 <strong style="color:var(--primary);">${sanitize(r.username)}</strong>
                 <p style="margin:10px 0; background:var(--bg-color); padding:10px; border-radius:8px;">${sanitize(r.text)}</p>
                 <div style="display:flex; gap:10px;">
-                    <button class="btn-outline" onclick="appAdmin.replyReport('${r.id}', '${r.uId}')">Reply</button> 
-                    <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.deleteReport('${r.id}')">Dismiss / Futa</button>
+                    <button class="btn-outline" onclick="appAdmin.replyReport('${r.id}', '${r.uId}')">Jibu (Reply)</button> 
+                    <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.deleteReport('${r.id}')">Futa</button>
                 </div>
             </div>`; 
         }); 
@@ -864,15 +954,15 @@ window.appAdmin = {
         const reply = prompt("Andika majibu yako (Reply):"); 
         if(reply) { 
             await updateDoc(doc(db, "reports", reportId), { adminReply: reply }); 
-            ui.showToast('Majibu yametumwa', 'success'); 
-            appAdmin.renderReports(); 
+            window.ui.showToast('Majibu yametumwa', 'success'); 
+            window.appAdmin.renderReports(); 
         } 
     },
     
     deleteReport: async (id) => { 
         await deleteDoc(doc(db, "reports", id)); 
-        ui.showToast('Ripoti Imefutwa', 'success'); 
-        appAdmin.renderReports(); 
+        window.ui.showToast('Ripoti Imefutwa', 'success'); 
+        window.appAdmin.renderReports(); 
     },
 
     renderPremiumReq: async () => {
@@ -907,8 +997,8 @@ window.appAdmin = {
             await updateDoc(doc(db, "users", userId), { isPremium: true }); 
         }
         await updateDoc(doc(db, "premium_requests", reqId), { status: approve ? 'approved' : 'rejected' });
-        ui.showToast(approve ? 'Amekuwa VIP Kikamilifu' : 'Ombi Limekataliwa', 'success'); 
-        appAdmin.renderPremiumReq();
+        window.ui.showToast(approve ? 'Amekuwa VIP Kikamilifu' : 'Ombi Limekataliwa', 'success'); 
+        window.appAdmin.renderPremiumReq();
     },
 
     renderPaymentSettings: () => {
@@ -948,7 +1038,7 @@ window.appAdmin = {
         const p = document.getElementById('admin-vip-price').value;
         await setDoc(doc(db, "system", "app_settings"), { premiumPrice: p }, { merge: true });
         window.systemSettings.premiumPrice = p; 
-        ui.showToast('Bei imebadilika kikamilifu', 'success');
+        window.ui.showToast('Bei imebadilika kikamilifu', 'success');
     },
     
     addPaymentMethod: async () => {
@@ -959,10 +1049,10 @@ window.appAdmin = {
         if(net && num && name) {
             window.systemSettings.paymentMethods.push({network: net, number: num, name: name});
             await setDoc(doc(db, "system", "app_settings"), { paymentMethods: window.systemSettings.paymentMethods }, { merge: true });
-            appAdmin.renderPaymentSettings(); 
-            ui.showToast('Namba imeongezwa', 'success');
+            window.appAdmin.renderPaymentSettings(); 
+            window.ui.showToast('Namba imeongezwa', 'success');
         } else {
-            ui.showToast('Jaza taarifa zote', 'error');
+            window.ui.showToast('Jaza taarifa zote', 'error');
         }
     },
     
@@ -970,24 +1060,54 @@ window.appAdmin = {
         if(confirm('Uhakika unataka kufuta namba hii?')) {
             window.systemSettings.paymentMethods.splice(index, 1);
             await setDoc(doc(db, "system", "app_settings"), { paymentMethods: window.systemSettings.paymentMethods }, { merge: true });
-            appAdmin.renderPaymentSettings(); 
-            ui.showToast('Namba imefutwa', 'success');
+            window.appAdmin.renderPaymentSettings(); 
+            window.ui.showToast('Namba imefutwa', 'success');
         }
+    },
+
+    renderAnnouncements: async () => {
+        const area = document.getElementById('admin-content-area'); 
+        area.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h4>Announcements</h4>
+                <button class="btn-primary" style="width:auto; padding:8px 15px;" onclick="ui.showModal('announcement-modal')">+ New</button>
+            </div>
+            <div id="ann-list"></div>
+        `;
+        
+        const list = document.getElementById('ann-list'); 
+        const snap = await getDocs(query(collection(db, "announcements"), orderBy("time", "desc")));
+        
+        snap.forEach(d => { 
+            const a = { id: d.id, ...d.data() }; 
+            list.innerHTML += `
+            <div class="card" style="border-left:4px solid var(--primary); margin-bottom:10px;">
+                <p style="margin-bottom:10px;">${sanitize(a.text)}</p>
+                <button class="btn-outline" style="color:var(--danger); border-color:var(--danger); padding:5px 10px; font-size:0.8rem;" onclick="appAdmin.deleteAnnouncement('${a.id}')">Delete</button>
+            </div>`; 
+        });
+    },
+
+    deleteAnnouncement: async (id) => { 
+        if(confirm("Delete?")) { 
+            await deleteDoc(doc(db, "announcements", id)); 
+            window.ui.showToast("Deleted", "success"); 
+            window.appAdmin.renderAnnouncements(); 
+        } 
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
     if(localStorage.getItem('st_theme') === 'dark') document.body.classList.add('dark');
     
-    // HII INAHIFADHI TAARIFA ZA USER LIVE KWA AJILI YA KUSASISHA BADGES
+    // KUSOMA LIVE USERS DATA
     onSnapshot(collection(db, "users"), (snap) => {
         snap.forEach(d => {
             window.usersCache[d.id] = d.data();
         });
         
-        // Kama yupo home na kuna mabadiliko ya badge, refresh posti zionyeshe
         if(document.getElementById('view-home') && document.getElementById('view-home').classList.contains('active')) {
-            appFeatures.renderFeed();
+            window.appFeatures.renderFeed();
         }
     });
     
@@ -1002,8 +1122,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('opt-premium').style.display = 'block'; 
         }
         
-        appFeatures.renderFeed(); 
-        setInterval(ui.createFallingHeart, 1500); 
+        window.appFeatures.renderFeed(); 
+        setInterval(window.ui.createFallingHeart, 1500); 
         checkNewMessages();
         
         onSnapshot(doc(db, "system", "app_settings"), (snap) => {
@@ -1023,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(viewUser) { 
             localStorage.removeItem('st_view_user'); 
-            setTimeout(() => appFeatures.viewUserProfile(viewUser), 500); 
+            setTimeout(() => window.appFeatures.viewUserProfile(viewUser), 500); 
         }
     }
 });
