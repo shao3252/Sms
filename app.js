@@ -4,7 +4,6 @@ import {
     doc, query, where, orderBy, onSnapshot, deleteDoc, arrayUnion, arrayRemove, getDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- 1. FIREBASE CONFIGURATION ---
 const firebaseConfig = {
   apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
   authDomain: "smstamu-28748.firebaseapp.com",
@@ -18,13 +17,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- 2. GLOBAL STATE & TRANSLATIONS ---
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
 let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
 
-// KAMUSI (Iliyoongezwa Maneno Mapya)
 const translations = {
     sw: {
         welcomeSub: "Shiriki meseji tamu za mapenzi",
@@ -150,8 +147,6 @@ const getCategoryTranslation = (dbCatString) => {
     return t(map[dbCatString] || 'catOther');
 };
 
-// --- 3. UTILITIES ---
-const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 const sanitize = (str) => str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
 const getVerifiedIcon = (v) => v ? `<span class="verified-badge">✓</span>` : '';
 const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
@@ -171,16 +166,22 @@ window.ui = {
     showModal: (id) => document.getElementById(id).classList.add('active'),
     hideModal: (id) => document.getElementById(id).classList.remove('active'),
     
-    // HEARTS ANIMATION SYSTEM
+    // RUNDO LA VIKOPA (Cluster animation)
     createFallingHeart: () => {
-        const heart = document.createElement('div');
-        heart.className = 'heart-fall';
-        const hearts = ['❤️', '💖', '💘', '💝', '💕', '🥰', '😍'];
-        heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
-        heart.style.left = Math.random() * 100 + 'vw';
-        heart.style.animationDuration = (Math.random() * 5 + 4) + 's'; // 4-9 seconds
-        document.body.appendChild(heart);
-        setTimeout(() => heart.remove(), 9000);
+        const numHearts = Math.floor(Math.random() * 3) + 2; // 2 to 4 hearts at once
+        const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨'];
+        
+        for(let i=0; i<numHearts; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart-fall';
+            heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.animationDuration = (Math.random() * 5 + 5) + 's'; // 5-10 seconds
+            // Offset them slightly so they form a cluster
+            heart.style.animationDelay = (Math.random() * 1) + 's';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 10000);
+        }
     }
 };
 
@@ -195,7 +196,6 @@ const timeAgo = (timestamp) => {
     return "Just now";
 };
 
-// --- 4. ROUTER ---
 window.router = {
     navigate: (viewId) => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -215,7 +215,6 @@ window.router = {
     }
 };
 
-// --- 5. AUTHENTICATION ---
 window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim();
@@ -272,7 +271,6 @@ window.appAuth = {
     }
 };
 
-// --- 6. CORE FEATURES ---
 window.appFeatures = {
     changeLang: (langCode) => {
         localStorage.setItem('st_lang', langCode);
@@ -832,7 +830,7 @@ window.appFeatures = {
                 </div>`;
             }
         });
-        if(!found) list.innerHTML = '<p style="text-align:center;">You have not reported any bugs yet.</p>';
+        if(!found) list.innerHTML = '<p>No active announcements.</p>';
         router.navigate('my-reports');
     },
     submitAppeal: async () => {
@@ -1087,6 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appFeatures.renderFeed();
         appFeatures.renderAnnouncementsToFeed();
 
+        // ANZISHA BACKGROUND HEARTS KUDONDOKA
         setInterval(ui.createFallingHeart, 1500);
         
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
