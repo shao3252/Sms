@@ -5,12 +5,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
-  authDomain: "smstamu-28748.firebaseapp.com",
-  projectId: "smstamu-28748",
-  storageBucket: "smstamu-28748.firebasestorage.app",
-  messagingSenderId: "928000331591",
-  appId: "1:928000331591:web:d71a658eb34feeea620662"
+    apiKey: "AIzaSyDoY0topAnJpvePclmDEFM7-9lLXdPX1pg",
+    authDomain: "smstamu-28748.firebaseapp.com",
+    projectId: "smstamu-28748",
+    storageBucket: "smstamu-28748.firebasestorage.app",
+    messagingSenderId: "928000331591",
+    appId: "1:928000331591:web:d71a658eb34feeea620662"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -24,9 +24,13 @@ if (!currentUser) {
 let selectedMsg = null;
 let replyingTo = null;
 let isGroupOpen = true;
-let isGroupAdmin = false;
 
-// Kuzuia spam (Namba na Links)
+// NGAZI ZA ADMINS
+let isSuperAdmin = currentUser.role === 'admin'; 
+let isMeGroupAdmin = false;
+window.groupAdminsList = [];
+
+// Kuzuia spam (Namba na Links) kwa watu wa kawaida
 const isSpamText = (text) => {
     const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9]+\.(com|net|org|co|tz|me|io|info))/i;
     const digitRegex = /\d/; 
@@ -51,7 +55,7 @@ const getVerifiedIcon = (v) => v ? `<span class="verified-badge" style="width:12
 
 window.chatSystem = {
     init: () => {
-        // MUHIMU KWA KUFUTA GREEN BADGE
+        // Hii inasaidia kufuta Green Badge ukifungua chat
         localStorage.setItem('st_chat_last_seen', Date.now());
 
         const gRef = doc(db, "system", "group_settings");
@@ -60,7 +64,8 @@ window.chatSystem = {
                 const data = snap.data();
                 
                 isGroupOpen = data.isOpen !== false;
-                isGroupAdmin = currentUser.role === 'admin' || (data.groupAdmins && data.groupAdmins.includes(currentUser.id));
+                window.groupAdminsList = data.groupAdmins || [];
+                isMeGroupAdmin = isSuperAdmin || window.groupAdminsList.includes(currentUser.id);
                 
                 document.getElementById('group-title').innerText = data.groupName || "🌍 Global Group";
                 
@@ -80,13 +85,13 @@ window.chatSystem = {
                     stat.innerText = "Group Limefungwa"; 
                     stat.style.color = "var(--danger)"; 
                     
-                    if(!isGroupAdmin) { 
+                    if(!isMeGroupAdmin) { 
                         input.disabled = true; 
                         input.placeholder = "Admin amefunga group."; 
                     } 
                 }
 
-                if(isGroupAdmin) {
+                if(isMeGroupAdmin) {
                     document.getElementById('group-settings-btn').style.display = 'block';
                     document.getElementById('toggle-lock-btn').innerText = isGroupOpen ? '🔒 Funga Group (Lock)' : '🔓 Fungua Group (Unlock)';
                     document.getElementById('toggle-lock-btn').style.color = isGroupOpen ? 'var(--danger)' : 'var(--success)';
@@ -104,7 +109,7 @@ window.chatSystem = {
                     bar.style.display = 'none'; 
                 }
             } else {
-                if(currentUser.role === 'admin') {
+                if(isSuperAdmin) {
                     setDoc(gRef, { groupName: "🌍 Global Group", isOpen: true, groupAdmins: [] });
                 }
             }
@@ -126,7 +131,7 @@ window.chatSystem = {
                 let replyHTML = '';
                 if(m.replyTo) {
                     replyHTML = `
-                    <div class="reply-block" style="cursor:pointer;" onclick="ui.showToast('Replied to: ${sanitize(m.replyTo.name)}')">
+                    <div class="reply-block" style="cursor:pointer;" onclick="window.ui.showToast('Replied to: ${sanitize(m.replyTo.name)}')">
                         <strong style="color:var(--primary)">${sanitize(m.replyTo.name)}</strong><br>
                         <span style="opacity:0.8">${sanitize(m.replyTo.text)}</span>
                     </div>`;
@@ -143,19 +148,38 @@ window.chatSystem = {
                     <span class="chat-time">${time}</span>
                 `;
                 
-                // Bonyeza meseji ili kufanya options
+                // Mfumo wa Ngazi za Uongozi (Hierarchy)
                 div.onclick = (e) => {
                     e.preventDefault();
                     
                     selectedMsg = { id: d.id, text: m.text, uId: m.uId, username: m.username };
                     
-                    document.getElementById('opt-pin').style.display = isGroupAdmin ? 'block' : 'none';
-                    document.getElementById('opt-delete').style.display = (isMine || isGroupAdmin) ? 'block' : 'none';
+                    const isTargetSuperAdmin = m.role === 'admin';
+                    const isTargetGroupAdmin = window.groupAdminsList.includes(m.uId);
+
+                    // LOGIC KUBWA HAPA YA NANI ANAWEZA KUFANYA NINI:
                     
-                    document.getElementById('opt-block').style.display = (isGroupAdmin && !isMine) ? 'block' : 'none';
-                    document.getElementById('opt-admin-make').style.display = (currentUser.role === 'admin' && !isMine) ? 'block' : 'none';
+                    // Pin inaweza kufanywa na Group Admin au Super Admin
+                    document.getElementById('opt-pin').style.display = isMeGroupAdmin ? 'block' : 'none';
                     
-                    ui.showModal('msg-options-modal');
+                    // Futa meseji: Kama ni yako, AU wewe ni Super Admin, AU wewe ni Group Admin na meseji SIO ya Super Admin
+                    const canDelete = isMine || isSuperAdmin || (isMeGroupAdmin && !isTargetSuperAdmin && !isTargetGroupAdmin);
+                    document.getElementById('opt-delete').style.display = canDelete ? 'block' : 'none';
+                    
+                    // Block user: Kama wewe ni Group Admin/Super Admin na unataka kublock mtu wa kawaida
+                    const canBlock = isMeGroupAdmin && !isMine && !isTargetSuperAdmin && !isTargetGroupAdmin;
+                    document.getElementById('opt-block').style.display = canBlock ? 'block' : 'none';
+                    
+                    // Make Admin: Super Admin PEKEE ndio anatoa U-admin kwa watu wa kawaida
+                    const canMakeAdmin = isSuperAdmin && !isMine && !isTargetGroupAdmin && !isTargetSuperAdmin;
+                    document.getElementById('opt-admin-make').style.display = canMakeAdmin ? 'block' : 'none';
+
+                    // Remove Admin: Super Admin PEKEE ndio anavua U-admin
+                    const canRemoveAdmin = isSuperAdmin && !isMine && isTargetGroupAdmin;
+                    const removeBtn = document.getElementById('opt-admin-remove');
+                    if(removeBtn) removeBtn.style.display = canRemoveAdmin ? 'block' : 'none';
+                    
+                    window.ui.showModal('msg-options-modal');
                 };
                 
                 box.appendChild(div);
@@ -167,21 +191,22 @@ window.chatSystem = {
     },
 
     sendGlobalMessage: async () => {
-        if(currentUser.isBlocked) return ui.showToast("Akaunti yako imezuiwa (Blocked)", "error");
-        if(!isGroupOpen && !isGroupAdmin) return ui.showToast("Group limefungwa", "error");
+        if(currentUser.isBlocked) return window.ui.showToast("Akaunti yako imezuiwa (Blocked)", "error");
+        if(!isGroupOpen && !isMeGroupAdmin) return window.ui.showToast("Group limefungwa", "error");
 
         const input = document.getElementById('chat-msg-input');
         const text = input.value.trim();
         if(!text) return;
 
-        if(!isGroupAdmin && isSpamText(text)) {
-            return ui.showToast("Hauruhusiwi kutuma Namba au Link humu!", "error");
+        if(!isMeGroupAdmin && isSpamText(text)) {
+            return window.ui.showToast("Hauruhusiwi kutuma Namba au Link humu!", "error");
         }
 
         const payload = { 
             uId: currentUser.id, 
             username: currentUser.username, 
             verified: currentUser.verified || false,
+            role: currentUser.role || 'user',  // Muhimu kwa Admin Protection
             text: text, 
             timestamp: Date.now() 
         };
@@ -193,7 +218,7 @@ window.chatSystem = {
         await addDoc(collection(db, "global_chat"), payload);
         
         input.value = ''; 
-        chatSystem.cancelReply();
+        window.chatSystem.cancelReply();
         
         setTimeout(() => {
             const box = document.getElementById('global-chat-box');
@@ -206,7 +231,7 @@ window.chatSystem = {
         document.getElementById('reply-preview').style.display = 'block';
         document.getElementById('reply-name').innerText = replyingTo.username;
         document.getElementById('reply-text').innerText = replyingTo.text;
-        ui.hideModal('msg-options-modal');
+        window.ui.hideModal('msg-options-modal');
         document.getElementById('chat-msg-input').focus();
     },
 
@@ -217,54 +242,64 @@ window.chatSystem = {
 
     actionCopy: () => {
         navigator.clipboard.writeText(selectedMsg.text);
-        ui.hideModal('msg-options-modal'); 
-        ui.showToast('Ujumbe Ume-copyiwa!', 'success');
+        window.ui.hideModal('msg-options-modal'); 
+        window.ui.showToast('Ujumbe Ume-copyiwa!', 'success');
     },
 
     actionPin: async () => {
         const groupRef = doc(db, "system", "group_settings");
         await updateDoc(groupRef, { pinnedMessages: arrayUnion(selectedMsg.text) });
-        ui.hideModal('msg-options-modal'); 
-        ui.showToast("Imewekwa kwenye Pinned!", "success");
+        window.ui.hideModal('msg-options-modal'); 
+        window.ui.showToast("Imewekwa kwenye Pinned!", "success");
     },
 
     actionUnpin: async (encodedText) => {
         if(confirm("Toa hii meseji kwenye Pinned?")) {
             const groupRef = doc(db, "system", "group_settings");
             await updateDoc(groupRef, { pinnedMessages: arrayRemove(decodeURIComponent(encodedText)) });
-            ui.showToast("Imetolewa!", "success");
-            chatSystem.showAllPinned(); // Refresh modal
+            window.ui.showToast("Imetolewa!", "success");
+            window.chatSystem.showAllPinned(); // Refresh modal
         }
     },
 
     actionDelete: async () => {
         if(confirm("Uhakika unataka kufuta ujumbe huu?")) {
             await deleteDoc(doc(db, "global_chat", selectedMsg.id));
-            ui.hideModal('msg-options-modal'); 
-            ui.showToast("Umefutwa kikamilifu", "success");
+            window.ui.hideModal('msg-options-modal'); 
+            window.ui.showToast("Umefutwa kikamilifu", "success");
         }
     },
 
     actionBlockUser: async () => {
         if(confirm(`Unataka kumpiga block ${selectedMsg.username}?`)) {
             await updateDoc(doc(db, "users", selectedMsg.uId), { isBlocked: true });
-            ui.hideModal('msg-options-modal'); 
-            ui.showToast("Mtumiaji amepigwa block", "success");
+            window.ui.hideModal('msg-options-modal'); 
+            window.ui.showToast("Mtumiaji amepigwa block", "success");
         }
     },
 
+    // SUPER ADMIN POWERS OVER GROUP ADMINS
     actionMakeAdmin: async () => {
         if(confirm(`Mfanye ${selectedMsg.username} awe Group Admin?`)) {
             const groupRef = doc(db, "system", "group_settings");
             await updateDoc(groupRef, { groupAdmins: arrayUnion(selectedMsg.uId) });
-            ui.hideModal('msg-options-modal'); 
-            ui.showToast("Amekuwa Group Admin", "success");
+            window.ui.hideModal('msg-options-modal'); 
+            window.ui.showToast("Amekuwa Group Admin", "success");
+        }
+    },
+
+    actionRemoveAdmin: async () => {
+        if(confirm(`Muondoe ${selectedMsg.username} kwenye U-admin wa Group?`)) {
+            const groupRef = doc(db, "system", "group_settings");
+            await updateDoc(groupRef, { groupAdmins: arrayRemove(selectedMsg.uId) });
+            window.ui.hideModal('msg-options-modal'); 
+            window.ui.showToast("Amepokonywa U-admin", "success");
         }
     },
 
     actionViewProfile: () => {
-        ui.hideModal('msg-options-modal');
-        chatSystem.directProfile(selectedMsg.uId);
+        window.ui.hideModal('msg-options-modal');
+        window.chatSystem.directProfile(selectedMsg.uId);
     },
 
     directProfile: (id) => {
@@ -275,8 +310,8 @@ window.chatSystem = {
     toggleGroupLock: async () => {
         const groupRef = doc(db, "system", "group_settings");
         await updateDoc(groupRef, { isOpen: !isGroupOpen });
-        ui.hideModal('group-settings-modal');
-        ui.showToast(isGroupOpen ? "Group Limefungwa (Locked)" : "Group Limefunguliwa (Unlocked)", "success");
+        window.ui.hideModal('group-settings-modal');
+        window.ui.showToast(isGroupOpen ? "Group Limefungwa (Locked)" : "Group Limefunguliwa (Unlocked)", "success");
     },
 
     editGroupName: async () => {
@@ -285,8 +320,8 @@ window.chatSystem = {
         
         if(newName && newName.trim() !== "") {
             await updateDoc(doc(db, "system", "group_settings"), { groupName: newName.trim() });
-            ui.hideModal('group-settings-modal');
-            ui.showToast("Jina limebadilishwa", "success");
+            window.ui.hideModal('group-settings-modal');
+            window.ui.showToast("Jina limebadilishwa", "success");
         }
     },
 
@@ -294,7 +329,7 @@ window.chatSystem = {
         const file = e.target.files[0]; 
         if (!file) return; 
         
-        ui.showToast('Inapakia picha...', 'info');
+        window.ui.showToast('Inapakia picha...', 'info');
         
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -311,10 +346,10 @@ window.chatSystem = {
 
                 try {
                     await updateDoc(doc(db, "system", "group_settings"), { groupPic: base64Compressed });
-                    ui.showToast('Picha ya Group imebadilishwa!', 'success');
-                    ui.hideModal('group-settings-modal');
+                    window.ui.showToast('Picha ya Group imebadilishwa!', 'success');
+                    window.ui.hideModal('group-settings-modal');
                 } catch(error) {
-                    ui.showToast('Imeshindwa kupakia. Jaribu tena.', 'error');
+                    window.ui.showToast('Imeshindwa kupakia. Jaribu tena.', 'error');
                 }
             };
             img.src = event.target.result;
@@ -330,14 +365,14 @@ window.chatSystem = {
         if(snap.exists() && snap.data().pinnedMessages){
             const pins = snap.data().pinnedMessages;
             if(pins.length === 0) {
-                ui.hideModal('pinned-modal');
-                ui.showToast("Hakuna Pinned messages.", "info");
+                window.ui.hideModal('pinned-modal');
+                window.ui.showToast("Hakuna Pinned messages.", "info");
                 return;
             }
 
             pins.forEach(text => { 
                 const encoded = encodeURIComponent(text);
-                const unpinBtn = isGroupAdmin ? `<button style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; padding:5px 0;" onclick="chatSystem.actionUnpin('${encoded}')">✖ Unpin</button>` : '';
+                const unpinBtn = isMeGroupAdmin ? `<button style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; padding:5px 0;" onclick="chatSystem.actionUnpin('${encoded}')">✖ Unpin</button>` : '';
                 
                 list.innerHTML += `
                 <div class="card" style="padding:10px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
@@ -345,16 +380,16 @@ window.chatSystem = {
                     <div>${unpinBtn}</div>
                 </div>`; 
             });
-            ui.showModal('pinned-modal');
+            window.ui.showModal('pinned-modal');
         } else {
-            ui.showToast("Hakuna Pinned messages.", "info");
+            window.ui.showToast("Hakuna Pinned messages.", "info");
         }
     }
 };
 
 document.getElementById('chat-msg-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
-        chatSystem.sendGlobalMessage();
+        window.chatSystem.sendGlobalMessage();
     }
 });
 
@@ -366,5 +401,5 @@ document.getElementById('chat-msg-input').addEventListener('focus', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-    chatSystem.init();
+    window.chatSystem.init();
 });
