@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-    getFirestore, collection, addDoc, updateDoc, 
+    getFirestore, collection, addDoc, updateDoc, setDoc,
     doc, query, orderBy, onSnapshot, deleteDoc, limit, arrayUnion, getDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -17,60 +17,91 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 let currentUser = JSON.parse(localStorage.getItem('st_session'));
-let selectedMsg = null;
-
 if (!currentUser) window.location.href = 'index.html';
 
-// SPAM FILTER
+let selectedMsg = null;
+let replyingTo = null;
+let isGroupOpen = true;
+let isGroupAdmin = false;
+
+// STRICT SPAM FILTER
 const isSpamText = (text) => {
     const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9]+\.(com|net|org|co|tz|me|io|info))/i;
-    const phoneRegex = /\d{8,}/;
-    return linkRegex.test(text) || phoneRegex.test(text);
+    const digitRegex = /\d/; // NO NUMBERS AT ALL
+    return linkRegex.test(text) || digitRegex.test(text);
+};
+
+window.ui = {
+    showToast: (m, type='info') => {
+        const c = document.getElementById('toast-container'); const t = document.createElement('div');
+        t.className=`toast ${type}`; t.innerText=m; c.appendChild(t); setTimeout(()=>t.remove(), 3500);
+    },
+    showModal: (id) => document.getElementById(id).classList.add('active'),
+    hideModal: (id) => document.getElementById(id).classList.remove('active')
 };
 
 window.chatSystem = {
     init: () => {
         localStorage.setItem('st_chat_last_seen', Date.now());
 
-        const groupRef = doc(db, "system", "group_settings");
-        onSnapshot(groupRef, (snap) => {
+        // LOAD GROUP SETTINGS
+        const gRef = doc(db, "system", "group_settings");
+        onSnapshot(gRef, (snap) => {
             if(snap.exists()){
-                const pins = snap.data().pinnedMessages || [];
-                const badge = document.getElementById('pinned-count-badge');
-                if(pins.length > 0) {
-                    badge.style.display = 'block';
-                    badge.innerText = `📌 ${pins.length} Pinned Message(s)`;
-                } else {
-                    badge.style.display = 'none';
-                }
+                const data = snap.data();
+                isGroupOpen = data.isOpen !== false;
+                isGroupAdmin = currentUser.role === 'admin' || (data.groupAdmins && data.groupAdmins.includes(currentUser.id));
+                
+                document.getElementById('group-title').innerText = data.groupName || "🌍 Global Group";
+                if(data.groupPic) document.getElementById('group-pic').src = data.groupPic;
+                
+                const stat = document.getElementById('group-status');
+                const lockBtn = document.getElementById('admin-lock-btn');
+                const input = document.getElementById('chat-msg-input');
+
+                if(isGroupOpen) { stat.innerText = "Tupo Online"; stat.style.color = "var(--success)"; input.disabled=false; input.placeholder="Andika ujumbe..."; lockBtn.innerText="🔓"; }
+                else { stat.innerText = "Group Limefungwa"; stat.style.color = "var(--danger)"; lockBtn.innerText="🔒"; if(!isGroupAdmin) { input.disabled=true; input.placeholder="Admin amefunga group."; } }
+
+                if(isGroupAdmin) lockBtn.style.display = 'block';
+
+                const pins = data.pinnedMessages || [];
+                const bar = document.getElementById('pinned-bar');
+                if(pins.length > 0) { bar.style.display = 'block'; document.getElementById('pin-count').innerText = pins.length; } else bar.style.display = 'none';
+            } else {
+                if(currentUser.role === 'admin') setDoc(gRef, { groupName: "🌍 Global Group", isOpen: true, groupAdmins: [] });
             }
         });
 
-        const q = query(collection(db, "global_chat"), orderBy("timestamp", "asc"), limit(50));
+        // LOAD MESSAGES (WHATSAPP STYLE)
+        const q = query(collection(db, "global_chat"), orderBy("timestamp", "asc"), limit(100));
         onSnapshot(q, (snap) => {
             const box = document.getElementById('global-chat-box');
             box.innerHTML = '';
             snap.forEach(d => {
-                const msg = d.data();
-                const isMine = msg.uId === currentUser.id;
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `msg-bubble ${isMine ? 'msg-mine' : 'msg-others'}`;
+                const m = d.data(); const isMine = m.uId === currentUser.id;
+                const div = document.createElement('div');
+                div.className = `msg-bubble ${isMine ? 'msg-mine' : 'msg-others'}`;
                 
-                const timeString = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                msgDiv.innerHTML = `${msg.text} <span class="chat-time" style="display:block; font-size:0.65rem; margin-top:3px; opacity:0.8; text-align:right;">${timeString}</span>`;
+                let replyHTML = '';
+                if(m.replyTo) {
+                    replyHTML = `<div class="reply-block"><strong style="color:var(--primary)">${m.replyTo.name}</strong><br><span style="opacity:0.8">${m.replyTo.text}</span></div>`;
+                }
+
+                const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const sender = isMine ? '' : `<strong style="font-size:0.75rem; color:var(--primary); display:block; cursor:pointer;" onclick="chatSystem.directProfile('${m.uId}')">${m.username}</strong>`;
+
+                div.innerHTML = `${sender}${replyHTML}<span>${m.text}</span><span class="chat-time">${time}</span>`;
                 
-                msgDiv.oncontextmenu = (e) => {
+                div.oncontextmenu = (e) => {
                     e.preventDefault();
-                    selectedMsg = { id: d.id, text: msg.text, uId: msg.uId };
-                    
-                    // Kama wewe sio Admin na meseji sio yako, huwezi kuifuta.
-                    if(currentUser.role !== 'admin' && selectedMsg.uId !== currentUser.id) {
-                        return; // Kataa kuonesha options
-                    }
-                    window.ui.showModal('msg-options-modal');
+                    selectedMsg = { id: d.id, text: m.text, uId: m.uId, username: m.username };
+                    document.getElementById('opt-pin').style.display = isGroupAdmin ? 'block' : 'none';
+                    document.getElementById('opt-delete').style.display = (isMine || isGroupAdmin) ? 'block' : 'none';
+                    document.getElementById('opt-block').style.display = (isGroupAdmin && !isMine) ? 'block' : 'none';
+                    document.getElementById('opt-admin-make').style.display = (currentUser.role === 'admin' && !isMine) ? 'block' : 'none';
+                    ui.showModal('msg-options-modal');
                 };
-                
-                box.appendChild(msgDiv);
+                box.appendChild(div);
             });
             box.scrollTop = box.scrollHeight;
             localStorage.setItem('st_chat_last_seen', Date.now());
@@ -78,53 +109,93 @@ window.chatSystem = {
     },
 
     sendGlobalMessage: async () => {
+        if(currentUser.isBlocked) return ui.showToast("Account Restricted", "error");
+        if(!isGroupOpen && !isGroupAdmin) return ui.showToast("Group is locked", "error");
+
         const input = document.getElementById('chat-msg-input');
         const text = input.value.trim();
         if(!text) return;
-        
-        // ZUIA KUTUMA LINK AU NAMBA KAMA SIO ADMIN
-        if(currentUser.role !== 'admin' && isSpamText(text)) {
-            return window.ui.showToast('Hauruhusiwi kuweka Link au Namba ya simu kwenye Group!', 'error');
-        }
 
-        input.value = '';
-        await addDoc(collection(db, "global_chat"), {
-            uId: currentUser.id,
-            username: currentUser.username,
-            text: text,
-            timestamp: Date.now()
-        });
+        if(!isGroupAdmin && isSpamText(text)) return ui.showToast("Hauruhusiwi kutuma Namba au Link!", "error");
+
+        const payload = { uId: currentUser.id, username: currentUser.username, text: text, timestamp: Date.now() };
+        if(replyingTo) { payload.replyTo = { name: replyingTo.username, text: replyingTo.text }; }
+
+        await addDoc(collection(db, "global_chat"), payload);
+        input.value = ''; chatSystem.cancelReply();
+    },
+
+    actionReply: () => {
+        replyingTo = selectedMsg;
+        document.getElementById('reply-preview').style.display = 'block';
+        document.getElementById('reply-name').innerText = replyingTo.username;
+        document.getElementById('reply-text').innerText = replyingTo.text;
+        ui.hideModal('msg-options-modal');
+        document.getElementById('chat-msg-input').focus();
+    },
+
+    cancelReply: () => {
+        replyingTo = null;
+        document.getElementById('reply-preview').style.display = 'none';
     },
 
     actionPin: async () => {
-        const groupRef = doc(db, "system", "group_settings");
-        await updateDoc(groupRef, {
-            pinnedMessages: arrayUnion(selectedMsg.text)
-        });
-        window.ui.hideModal('msg-options-modal');
-        window.ui.showToast("Message Pinned!", "success");
+        await updateDoc(doc(db, "system", "group_settings"), { pinnedMessages: arrayUnion(selectedMsg.text) });
+        ui.hideModal('msg-options-modal'); ui.showToast("Pinned!", "success");
     },
 
     actionDelete: async () => {
-        if(confirm("Delete this message?")) {
-            await deleteDoc(doc(db, "global_chat", selectedMsg.id));
-            window.ui.hideModal('msg-options-modal');
-            window.ui.showToast('Deleted', 'success');
+        await deleteDoc(doc(db, "global_chat", selectedMsg.id));
+        ui.hideModal('msg-options-modal'); ui.showToast("Deleted", "success");
+    },
+
+    actionBlockUser: async () => {
+        if(confirm(`Block ${selectedMsg.username}?`)) {
+            await updateDoc(doc(db, "users", selectedMsg.uId), { isBlocked: true });
+            ui.hideModal('msg-options-modal'); ui.showToast("User Blocked", "success");
         }
     },
 
+    actionMakeAdmin: async () => {
+        if(confirm(`Make ${selectedMsg.username} Group Admin?`)) {
+            await updateDoc(doc(db, "system", "group_settings"), { groupAdmins: arrayUnion(selectedMsg.uId) });
+            ui.hideModal('msg-options-modal'); ui.showToast("Promoted to Group Admin", "success");
+        }
+    },
+
+    actionViewProfile: () => {
+        ui.hideModal('msg-options-modal');
+        localStorage.setItem('st_view_user', selectedMsg.uId);
+        window.location.href = 'index.html';
+    },
+
+    directProfile: (id) => {
+        localStorage.setItem('st_view_user', id);
+        window.location.href = 'index.html';
+    },
+
+    toggleGroupLock: async () => {
+        await updateDoc(doc(db, "system", "group_settings"), { isOpen: !isGroupOpen });
+    },
+
+    showGroupInfo: async () => {
+        if(!isGroupAdmin) return;
+        const newName = prompt("Badili jina la Group:", document.getElementById('group-title').innerText);
+        if(newName) await updateDoc(doc(db, "system", "group_settings"), { groupName: newName });
+    },
+
+    editGroupImage: () => {
+        if(!isGroupAdmin) return;
+        const url = prompt("Weka Link ya Picha Mpya ya Group (URL):");
+        if(url) updateDoc(doc(db, "system", "group_settings"), { groupPic: url });
+    },
+
     showAllPinned: async () => {
-        const groupRef = doc(db, "system", "group_settings");
-        const snap = await getDoc(groupRef);
-        const list = document.getElementById('pinned-list-container');
-        list.innerHTML = '';
+        const snap = await getDoc(doc(db, "system", "group_settings"));
+        const list = document.getElementById('pinned-list-container'); list.innerHTML = '';
         if(snap.exists() && snap.data().pinnedMessages){
-            snap.data().pinnedMessages.forEach(text => {
-                list.innerHTML += `<div class="card" style="margin-bottom:8px; font-size:0.9rem;">${text}</div>`;
-            });
-            window.ui.showModal('pinned-modal');
-        } else {
-            window.ui.showToast("No pinned messages.");
+            snap.data().pinnedMessages.forEach(text => { list.innerHTML += `<div class="card" style="padding:10px; margin-bottom:5px;">${text}</div>`; });
+            ui.showModal('pinned-modal');
         }
     }
 };
