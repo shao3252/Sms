@@ -85,8 +85,12 @@ window.ui = {
         const isDark = document.body.classList.toggle('dark'); 
         localStorage.setItem('st_theme', isDark ? 'dark' : 'light'); 
     },
-    showModal: (id) => document.getElementById(id).classList.add('active'),
-    hideModal: (id) => document.getElementById(id).classList.remove('active'),
+    showModal: (id) => {
+        document.getElementById(id).classList.add('active');
+    },
+    hideModal: (id) => {
+        document.getElementById(id).classList.remove('active');
+    },
     createFallingHeart: () => { 
         const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨']; 
         const heart = document.createElement('div'); 
@@ -118,7 +122,6 @@ const checkNewMessages = () => {
     onSnapshot(q, (snap) => {
         const badge = document.getElementById('chat-badge');
         if (badge) {
-            // Kama haupo kwenye chat.html na kuna meseji mpya
             if (!snap.empty && window.location.pathname.indexOf('chat.html') === -1) {
                 badge.style.display = 'block'; 
                 badge.innerText = snap.size;
@@ -151,6 +154,7 @@ window.appAuth = {
     login: async () => {
         const email = document.getElementById('login-email').value.trim(); 
         const pass = document.getElementById('login-pass').value;
+        
         if (!email || !pass) return ui.showToast('Ingiza email na password', 'error');
         
         const q = query(collection(db, "users"), where("email", "==", email), where("password", "==", pass));
@@ -248,7 +252,6 @@ window.appFeatures = {
         const uSnap = await getDoc(doc(db, "users", currentUser.id)); 
         const freshUser = uSnap.data();
         
-        // Auto approve logic
         const postStatus = window.systemSettings.autoApprove || freshUser.role === 'admin' ? 'approved' : 'pending';
 
         await addDoc(collection(db, "posts"), { 
@@ -265,9 +268,16 @@ window.appFeatures = {
             fakeLikes: 0 
         });
         
-        ui.showToast(postStatus === 'approved' ? 'Imepostiwa Kikamilifu!' : 'Imetumwa Kusubiri Ukaguzi', 'success');
-        document.getElementById('post-text').value = ''; 
-        router.navigate('home');
+        // IKIWA NI KUNTU, TUELEKEZE KWENYE PREMIUM.HTML
+        if(cat === 'Message Kuntu') {
+            ui.showToast('Posti ya Kuntu imetumwa!', 'success');
+            document.getElementById('post-text').value = '';
+            window.location.href = 'premium.html';
+        } else {
+            ui.showToast(postStatus === 'approved' ? 'Imepostiwa Kikamilifu!' : 'Imetumwa Kusubiri Ukaguzi', 'success');
+            document.getElementById('post-text').value = ''; 
+            router.navigate('home');
+        }
     },
 
     editPost: async (pId) => {
@@ -286,7 +296,6 @@ window.appFeatures = {
         }
     },
 
-    // NATIVE SHARE (If fails, opens WhatsApp)
     sharePost: async (encodedText) => {
         const text = decodeURIComponent(encodedText);
         const shareData = { 
@@ -301,7 +310,6 @@ window.appFeatures = {
                 console.log('User canceled share'); 
             }
         } else {
-            // Fallback kwa WhatsApp pekee kama simu hairuhusu
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.text)}`);
         }
     },
@@ -376,13 +384,13 @@ window.appFeatures = {
             c.innerHTML = ''; 
             let found = false;
             
-            // Array ya watu uliowablock
+            // Watu uliowablock
             const blocked = currentUser.blockedUsers || [];
             
             snap.forEach(d => { 
                 const p = { id: d.id, ...d.data() }; 
                 
-                // Meseji za Kuntu hazionekani hapa kabisa hata kwenye All
+                // Meseji za Kuntu hazionekani kwenye feed ya kawaida
                 if (p.category === 'Message Kuntu') return;
 
                 if(p.status === 'approved' && !blocked.includes(p.authorId)) {
@@ -410,6 +418,7 @@ window.appFeatures = {
         if(currentUser.isBlocked) return; 
         const r = doc(db, "posts", pId); 
         const s = await getDoc(r); 
+        
         if(s.exists() && s.data().likes && s.data().likes.includes(currentUser.id)) {
             await updateDoc(r, { likes: arrayRemove(currentUser.id) }); 
         } else { 
@@ -420,6 +429,7 @@ window.appFeatures = {
     toggleSave: async (pId) => { 
         const r = doc(db, "users", currentUser.id); 
         if (!currentUser.saved) currentUser.saved = []; 
+        
         if (currentUser.saved.includes(pId)) { 
             currentUser.saved = currentUser.saved.filter(id => id !== pId); 
             await updateDoc(r, { saved: arrayRemove(pId) }); 
@@ -427,6 +437,7 @@ window.appFeatures = {
             currentUser.saved.push(pId); 
             await updateDoc(r, { saved: arrayUnion(pId) }); 
         } 
+        
         localStorage.setItem('st_session', JSON.stringify(currentUser)); 
         appFeatures.renderFeed(); 
     },
@@ -445,10 +456,9 @@ window.appFeatures = {
         l.innerHTML = ''; 
         
         if (s.exists() && s.data().comments) {
-            const authorId = s.data().authorId; // Mwenye posti
+            const authorId = s.data().authorId; 
             
             s.data().comments.forEach((c, index) => { 
-                // Admin, Mwenye posti, au Mwenye Comment ana uwezo wa kufuta
                 const canDelete = currentUser.role === 'admin' || authorId === currentUser.id || c.uId === currentUser.id;
                 
                 const delBtn = canDelete ? `<button onclick="appFeatures.deleteComment('${pId}', ${index})" style="color:var(--danger); background:none; border:none; font-size:1.1rem; cursor:pointer;">🗑️</button>` : '';
@@ -476,10 +486,8 @@ window.appFeatures = {
         
         if(snap.exists()) {
             let comments = snap.data().comments;
-            comments.splice(cIndex, 1); // Ondoa comment
+            comments.splice(cIndex, 1); 
             await updateDoc(pRef, { comments: comments });
-            
-            // Re-render modal
             appFeatures.openComments(pId);
             ui.showToast('Comment imefutwa', 'success');
         }
@@ -538,7 +546,6 @@ window.appFeatures = {
         document.getElementById('other-followers').innerText = (u.followers ? u.followers.length : 0) + (u.fakeFollowers || 0); 
         document.getElementById('follow-btn').innerText = currentUser.following && currentUser.following.includes(uId) ? 'Following' : 'Follow'; 
         
-        // Setup Block button state
         const bBtn = document.getElementById('user-block-btn');
         if(currentUser.blockedUsers && currentUser.blockedUsers.includes(uId)) {
             bBtn.innerText = "Mfungulie (Unblock)"; 
@@ -559,7 +566,6 @@ window.appFeatures = {
         
         snap.forEach(d => { 
             const p = {id: d.id, ...d.data()}; 
-            // Usioneshe posti za kuntu kwenye profile za watu wengine
             if(p.authorId === uId && p.status === 'approved' && p.category !== 'Message Kuntu') { 
                 c.innerHTML += appFeatures.createPostHTML(p); 
                 found = true; 
@@ -578,19 +584,18 @@ window.appFeatures = {
         if(!currentUser.blockedUsers) currentUser.blockedUsers = [];
         
         if(currentUser.blockedUsers.includes(viewingUserId)) {
-            // Unblock
             currentUser.blockedUsers = currentUser.blockedUsers.filter(id => id !== viewingUserId);
             await updateDoc(myRef, { blockedUsers: arrayRemove(viewingUserId) });
             ui.showToast("Umemfungulia mtumiaji huyu.", "success");
         } else {
-            // Block
             currentUser.blockedUsers.push(viewingUserId);
             await updateDoc(myRef, { blockedUsers: arrayUnion(viewingUserId) });
             ui.showToast("Umemblock. Hutaona posti zake tena.", "info");
         }
         
         localStorage.setItem('st_session', JSON.stringify(currentUser));
-        appFeatures.viewUserProfile(viewingUserId); // Refresh UI
+        appFeatures.viewUserProfile(viewingUserId); 
+        if(currentFeedCategory !== 'All') appFeatures.renderFeed(); 
     },
 
     toggleFollow: async () => { 
@@ -669,7 +674,6 @@ window.appFeatures = {
         snap.forEach(d => { 
             const p = {id: d.id, ...d.data()}; 
             
-            // Kama ni Kuntu, isionekane kwenye public lists (ila kwenye feed yake tu)
             if(p.category === 'Message Kuntu') return;
 
             if(p.status === 'approved' && !blocked.includes(p.authorId)) {
@@ -713,37 +717,15 @@ window.appFeatures = {
                 r.innerHTML += appFeatures.createPostHTML(p); 
             } 
         }); 
-    },
-    
-    openSettings: () => { 
-        document.getElementById('btn-appeal').style.display = currentUser.isBlocked ? 'block' : 'none'; 
-        ui.showModal('settings-modal'); 
-    }, 
-    
-    submitReport: async () => { 
-        const tInput = document.getElementById('bug-text').value.trim(); 
-        if(tInput) { 
-            await addDoc(collection(db, "reports"), { uId: currentUser.id, username: currentUser.username, text: tInput, time: Date.now(), adminReply: null }); 
-            ui.hideModal('bug-modal'); 
-            ui.showToast('Ripoti imetumwa kikamilifu.', 'success'); 
-        } 
     }
 };
 
+// ADMIN PANEL VIZURI (WELL ARRANGED & BUG REPORTS)
 window.appAdmin = {
     toggleAutoApprove: async () => { 
         const newVal = !window.systemSettings.autoApprove; 
         await setDoc(doc(db, "system", "app_settings"), { autoApprove: newVal }, { merge: true }); 
         ui.showToast(`Auto Approve imekuwa ${newVal ? 'ON' : 'OFF'}`, 'success'); 
-    },
-    
-    addFakeLikes: async (postId, currentFake) => { 
-        const amount = prompt("Weka idadi ya likes:", "100"); 
-        if(amount) { 
-            await updateDoc(doc(db, "posts", postId), { fakeLikes: currentFake + parseInt(amount) }); 
-            ui.showToast('Zimeongezwa', 'success'); 
-            appFeatures.renderFeed(); 
-        } 
     },
     
     changeCategory: async (postId) => { 
@@ -757,10 +739,13 @@ window.appAdmin = {
     renderPending: async () => { 
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4>Posti Zinasubiri Ukaguzi</h4>'; 
+        
         const snap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc"))); 
         snap.forEach(d => { 
             const p = { id: d.id, ...d.data() }; 
-            if(p.status === 'pending') area.innerHTML += appFeatures.createPostHTML(p, 'admin_queue'); 
+            if(p.status === 'pending') {
+                area.innerHTML += appFeatures.createPostHTML(p, 'admin_queue'); 
+            }
         }); 
     },
     
@@ -773,6 +758,7 @@ window.appAdmin = {
     renderUsers: async () => {
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4>Udhibiti wa Watumiaji</h4>';
+        
         const snap = await getDocs(collection(db, "users"));
         
         snap.forEach(docSnap => {
@@ -780,10 +766,7 @@ window.appAdmin = {
             
             let tools = `
             <button onclick="appAdmin.toggleVerify('${u.id}', ${u.verified})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">
-                ${u.verified ? 'Toa Verify' : 'Verify'}
-            </button> 
-            <button onclick="appAdmin.addFakeFollowers('${u.id}', ${u.fakeFollowers || 0})" class="btn-outline" style="padding:6px 12px; font-size:0.8rem;">
-                + Followers
+                ${u.verified ? 'Toa Verify' : 'Verify (Tiki Bluu)'}
             </button>`;
             
             if (u.id !== currentUser.id) {
@@ -792,7 +775,7 @@ window.appAdmin = {
                     ${u.isBlocked?'Fungulia':'Block'}
                 </button> 
                 <button onclick="appAdmin.deleteUser('${u.id}')" class="btn-outline" style="color:var(--text-muted); padding:6px 12px; font-size:0.8rem;">
-                    Futa (Delete)
+                    Futa Kabisa
                 </button>`;
             }
             
@@ -810,24 +793,28 @@ window.appAdmin = {
         });
     },
     
+    // VERIFY FIX: Ina-update hadi posti za zamani zote
     toggleVerify: async (userId, currentStatus) => { 
-        await updateDoc(doc(db, "users", userId), { verified: !currentStatus }); 
-        ui.showToast('Imesasishwa', 'success'); 
+        const newStatus = !currentStatus;
+        
+        // 1. Update the user document
+        await updateDoc(doc(db, "users", userId), { verified: newStatus }); 
+        
+        // 2. Update all their existing posts so the badge shows immediately
+        const postsQuery = query(collection(db, "posts"), where("authorId", "==", userId));
+        const postsSnap = await getDocs(postsQuery);
+        
+        postsSnap.forEach(async (docSnap) => {
+            await updateDoc(doc(db, "posts", docSnap.id), { authorVerified: newStatus });
+        });
+
+        ui.showToast(`Imewekwa Verified: ${newStatus}`, 'success'); 
         appAdmin.renderUsers(); 
-    },
-    
-    addFakeFollowers: async (userId, currentFake) => { 
-        const amount = prompt("Add followers:", "1000"); 
-        if(amount) { 
-            await updateDoc(doc(db, "users", userId), { fakeFollowers: currentFake + parseInt(amount) }); 
-            ui.showToast('Zimeongezwa', 'success'); 
-            appAdmin.renderUsers(); 
-        } 
     },
     
     toggleBlock: async (userId, currentStatus) => { 
         await updateDoc(doc(db, "users", userId), { isBlocked: !currentStatus }); 
-        ui.showToast('Block status imebadilika', 'success'); 
+        ui.showToast('Block imebadilika', 'success'); 
         appAdmin.renderUsers(); 
     },
     
@@ -839,7 +826,49 @@ window.appAdmin = {
         } 
     },
     
-    // ADMIN DASHBOARD YA PREMIUM REQUESTS
+    // BUG REPORTS KAMA ULIVYOOMBA
+    renderReports: async () => { 
+        const area = document.getElementById('admin-content-area'); 
+        area.innerHTML = '<h4>Ripoti za Watumiaji (Bug Reports)</h4>'; 
+        
+        const snap = await getDocs(query(collection(db, "reports"), orderBy("time", "desc"))); 
+        let found = false;
+        
+        snap.forEach(d => { 
+            found = true;
+            const r = { id: d.id, ...d.data() }; 
+            area.innerHTML += `
+            <div class="card" style="margin-bottom:15px; border-left:4px solid var(--danger);">
+                <strong style="color:var(--primary);">${sanitize(r.username)}</strong>
+                <p style="margin:10px 0; background:var(--bg-color); padding:10px; border-radius:8px;">${sanitize(r.text)}</p>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-outline" onclick="appAdmin.replyReport('${r.id}', '${r.uId}')">Reply</button> 
+                    <button class="btn-outline" style="color:var(--danger); border-color:var(--danger);" onclick="appAdmin.deleteReport('${r.id}')">Dismiss / Futa</button>
+                </div>
+            </div>`; 
+        }); 
+        
+        if(!found) {
+            area.innerHTML += "<p style='text-align:center;'>Hakuna ripoti mpya.</p>";
+        }
+    },
+    
+    replyReport: async (reportId, userId) => { 
+        const reply = prompt("Andika majibu yako (Reply):"); 
+        if(reply) { 
+            await updateDoc(doc(db, "reports", reportId), { adminReply: reply }); 
+            ui.showToast('Majibu yametumwa', 'success'); 
+            appAdmin.renderReports(); 
+        } 
+    },
+    
+    deleteReport: async (id) => { 
+        await deleteDoc(doc(db, "reports", id)); 
+        ui.showToast('Ripoti Imefutwa', 'success'); 
+        appAdmin.renderReports(); 
+    },
+
+    // PREMIUM VIP REQUESTS DASHBOARD
     renderPremiumReq: async () => {
         const area = document.getElementById('admin-content-area'); 
         area.innerHTML = '<h4 style="color:#d4af37;">🌟 Maombi ya VIP (Message Kuntu)</h4>';
@@ -876,7 +905,7 @@ window.appAdmin = {
         appAdmin.renderPremiumReq();
     },
 
-    // PAYMENT SETTINGS (Kuedit Namba za Kulipia na Bei)
+    // SETTINGS ZA MALIPO YA VIP KUNTU
     renderPaymentSettings: () => {
         const area = document.getElementById('admin-content-area');
         let html = `<h4>Payment Methods (VIP)</h4>
@@ -953,13 +982,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(currentUser.role === 'admin') {
             document.getElementById('admin-btn').style.display = 'block';
-            document.getElementById('opt-premium').style.display = 'block'; // Onyesha VIP option kwenye create post
+            document.getElementById('opt-premium').style.display = 'block'; 
         }
         
         appFeatures.renderFeed(); 
         setInterval(ui.createFallingHeart, 1500); 
-        
-        // CHECK MESEJI ZA CHAT ZILIZOPO
         checkNewMessages();
         
         onSnapshot(doc(db, "system", "app_settings"), (snap) => {
