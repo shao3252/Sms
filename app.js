@@ -18,15 +18,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- ENABLE OFFLINE PERSISTENCE ---
+// Enable Offline Mode
 enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == 'failed-precondition') {
-        // Usually happens if multiple tabs are open at once
-        console.warn("Offline persistence failed: Multiple tabs open.");
-    } else if (err.code == 'unimplemented') {
-        // The browser doesn't support the required features
-        console.warn("Offline persistence is not supported by this browser.");
-    }
+    console.warn("Offline persistence status:", err.code);
 });
 
 let currentUser = JSON.parse(localStorage.getItem('st_session')) || null;
@@ -34,112 +28,44 @@ let currentFeedCategory = 'All';
 let viewingUserId = null;
 let currentCommentPostId = null;
 
+// TUNA-BLOCK LINK NA NAMBA ZA SIMU HAPA
+const isSpamText = (text) => {
+    const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|([a-zA-Z0-9]+\.(com|net|org|co|tz|me|io|info))/i;
+    const phoneRegex = /\d{8,}/; // Kuzuia mfululizo wa namba kuanzia 8 na kuendelea
+    return linkRegex.test(text) || phoneRegex.test(text);
+};
+
 const translations = {
     sw: {
-        welcomeSub: "Shiriki meseji tamu za mapenzi",
-        loginHeader: "Ingia",
-        regHeader: "Jisajili",
-        loginBtn: "Ingia",
-        regBtn: "Jisajili",
-        noAccount: "Hauna akaunti?",
-        haveAccount: "Tayari una akaunti?",
-        navHome: "Nyumbani",
-        navSearch: "Tafuta",
-        navChat: "Chat",
-        navAlerts: "Taarifa",
-        navProfile: "Wasifu",
-        draftTitle: "Andika Meseji",
-        sendApprovalBtn: "Tuma Ikaguliwe",
-        followingText: "Unaowafuata",
-        followersText: "Wanaokufuata",
-        editProfileBtn: "Badili Wasifu",
-        myPostsTab: "Posti Zangu",
-        likedTab: "Zilizopendwa",
-        savedTab: "Zilizohifadhiwa",
-        settingsTitle: "Mipangilio",
-        toggleTheme: "🌓 Badili Muonekano",
-        reportBugBtn: "🐞 Ripoti Tatizo",
-        myReportsBtn: "📋 Ripoti Zangu",
-        logoutBtn: "🚪 Toka",
-        closeBtn: "Funga",
-        
-        pendingApproval: "Inasubiri Kukaguliwa",
-        rejected: "Imekataliwa",
-        approve: "Ruhusu",
-        reject: "Kataa",
-        share: "Shiriki",
-        copy: "📋 Copy",
-        deletePost: "Futa",
-        editPost: "✏️ Edit",
-        editCat: "✏️ Kundi",
-        addLikes: "+ Likes",
-        noPosts: "Hakuna posti kwenye kundi hili.",
-        loading: "Inaload...",
-        searching: "Inatafuta...",
-        usersTitle: "Watumiaji",
-        postsTitle: "Posti",
-        noUsersFound: "Hakuna mtumiaji aliyepatikana.",
-        noPostsFound: "Hakuna posti zilizopatikana.",
-        
-        catAll: "Yote",
-        catSelect: "Chagua Kundi...",
-        catApology: "Kuomba Msamaha",
-        catPraise: "Kusifia",
-        catSeductive: "Kuvutia",
-        catOther: "Mengineyo"
+        welcomeSub: "Shiriki meseji tamu za mapenzi", loginHeader: "Ingia", regHeader: "Jisajili",
+        loginBtn: "Ingia", regBtn: "Jisajili", noAccount: "Hauna akaunti?", haveAccount: "Tayari una akaunti?",
+        navHome: "Nyumbani", navSearch: "Tafuta", navChat: "Chat", navAlerts: "Taarifa", navProfile: "Wasifu",
+        draftTitle: "Andika Meseji", sendApprovalBtn: "Tuma Ujumbe", followingText: "Unaowafuata",
+        followersText: "Wanaokufuata", editProfileBtn: "Badili Wasifu", myPostsTab: "Posti Zangu",
+        likedTab: "Zilizopendwa", savedTab: "Zilizohifadhiwa", settingsTitle: "Mipangilio",
+        toggleTheme: "🌓 Badili Muonekano", reportBugBtn: "🐞 Ripoti Tatizo", myReportsBtn: "📋 Ripoti Zangu",
+        logoutBtn: "🚪 Toka", closeBtn: "Funga", pendingApproval: "Inasubiri Kukaguliwa",
+        rejected: "Imekataliwa", approve: "Ruhusu", reject: "Kataa", share: "Shiriki", copy: "📋 Copy",
+        deletePost: "Futa", editPost: "✏️ Edit", editCat: "✏️ Kundi", addLikes: "+ Likes",
+        noPosts: "Hakuna posti kwenye kundi hili.", loading: "Inaload...", searching: "Inatafuta...",
+        usersTitle: "Watumiaji", postsTitle: "Posti", noUsersFound: "Hakuna mtumiaji aliyepatikana.",
+        noPostsFound: "Hakuna posti zilizopatikana.", catAll: "Yote", catSelect: "Chagua Kundi...",
+        catApology: "Kuomba Msamaha", catPraise: "Kusifia", catSeductive: "Kuvutia", catOther: "Mengineyo"
     },
     en: {
-        welcomeSub: "Share the sweetest love texts",
-        loginHeader: "Login",
-        regHeader: "Register",
-        loginBtn: "Login",
-        regBtn: "Register",
-        noAccount: "Don't have an account?",
-        haveAccount: "Already have an account?",
-        navHome: "Home",
-        navSearch: "Search",
-        navChat: "Chat",
-        navAlerts: "Alerts",
-        navProfile: "Profile",
-        draftTitle: "Draft a Love Text",
-        sendApprovalBtn: "Send for Approval",
-        followingText: "Following",
-        followersText: "Followers",
-        editProfileBtn: "Edit Profile",
-        myPostsTab: "My Posts",
-        likedTab: "Liked",
-        savedTab: "Saved",
-        settingsTitle: "Settings",
-        toggleTheme: "🌓 Change Theme",
-        reportBugBtn: "🐞 Report a Bug",
-        myReportsBtn: "📋 My Bug Reports",
-        logoutBtn: "🚪 Logout",
-        closeBtn: "Close",
-        
-        pendingApproval: "Pending Approval",
-        rejected: "Rejected",
-        approve: "Approve",
-        reject: "Reject",
-        share: "Share",
-        copy: "📋 Copy",
-        deletePost: "Delete",
-        editPost: "✏️ Edit",
-        editCat: "✏️ Edit Cat",
-        addLikes: "+ Likes",
-        noPosts: "No posts found in this category.",
-        loading: "Loading...",
-        searching: "Searching...",
-        usersTitle: "Users",
-        postsTitle: "Posts",
-        noUsersFound: "No users found.",
-        noPostsFound: "No posts found.",
-        
-        catAll: "All",
-        catSelect: "Select a Category...",
-        catApology: "Apology messages",
-        catPraise: "Messages of praise",
-        catSeductive: "Seductive Messages",
-        catOther: "Other"
+        welcomeSub: "Share the sweetest love texts", loginHeader: "Login", regHeader: "Register",
+        loginBtn: "Login", regBtn: "Register", noAccount: "Don't have an account?", haveAccount: "Already have an account?",
+        navHome: "Home", navSearch: "Search", navChat: "Chat", navAlerts: "Alerts", navProfile: "Profile",
+        draftTitle: "Draft a Love Text", sendApprovalBtn: "Post Message", followingText: "Following",
+        followersText: "Followers", editProfileBtn: "Edit Profile", myPostsTab: "My Posts",
+        likedTab: "Liked", savedTab: "Saved", settingsTitle: "Settings", toggleTheme: "🌓 Change Theme",
+        reportBugBtn: "🐞 Report a Bug", myReportsBtn: "📋 My Bug Reports", logoutBtn: "🚪 Logout",
+        closeBtn: "Close", pendingApproval: "Pending Approval", rejected: "Rejected", approve: "Approve",
+        reject: "Reject", share: "Share", copy: "📋 Copy", deletePost: "Delete", editPost: "✏️ Edit",
+        editCat: "✏️ Edit Cat", addLikes: "+ Likes", noPosts: "No posts found in this category.",
+        loading: "Loading...", searching: "Searching...", usersTitle: "Users", postsTitle: "Posts",
+        noUsersFound: "No users found.", noPostsFound: "No posts found.", catAll: "All", catSelect: "Select a Category...",
+        catApology: "Apology messages", catPraise: "Messages of praise", catSeductive: "Seductive Messages", catOther: "Other"
     }
 };
 
@@ -149,13 +75,7 @@ window.t = (key) => {
 };
 
 const getCategoryTranslation = (dbCatString) => {
-    const map = {
-        'All': 'catAll',
-        'Apology messages': 'catApology',
-        'Messages of praise': 'catPraise',
-        'Seductive Messages': 'catSeductive',
-        'Other': 'catOther'
-    };
+    const map = { 'All': 'catAll', 'Apology messages': 'catApology', 'Messages of praise': 'catPraise', 'Seductive Messages': 'catSeductive', 'Other': 'catOther' };
     return t(map[dbCatString] || 'catOther');
 };
 
@@ -172,16 +92,14 @@ window.ui = {
         setTimeout(() => { tDiv.remove(); }, 3500);
     },
     toggleTheme: () => {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('st_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        const isDark = document.body.classList.toggle('dark');
+        localStorage.setItem('st_theme', isDark ? 'dark' : 'light');
     },
     showModal: (id) => document.getElementById(id).classList.add('active'),
     hideModal: (id) => document.getElementById(id).classList.remove('active'),
-    
     createFallingHeart: () => {
         const numHearts = Math.floor(Math.random() * 3) + 2; 
         const hearts = ['❤️', '💖', '💘', '💝', '💕', '🔥', '✨'];
-        
         for(let i=0; i<numHearts; i++) {
             const heart = document.createElement('div');
             heart.className = 'heart-fall';
@@ -204,6 +122,23 @@ const timeAgo = (timestamp) => {
     interval = seconds / 60;
     if (interval > 1) return Math.floor(interval) + "m ago";
     return "Just now";
+};
+
+// CHAT UNREAD BADGE LOGIC
+const checkNewMessages = () => {
+    const lastSeen = localStorage.getItem('st_chat_last_seen') || 0;
+    const q = query(collection(db, "global_chat"), where("timestamp", ">", parseInt(lastSeen)));
+    onSnapshot(q, (snap) => {
+        const badge = document.getElementById('chat-badge');
+        if (badge) {
+            if (!snap.empty && window.location.pathname.indexOf('chat.html') === -1) {
+                badge.style.display = 'block';
+                badge.innerText = snap.size;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    });
 };
 
 window.router = {
@@ -311,17 +246,23 @@ window.appFeatures = {
         const cat = document.getElementById('post-category').value;
         if(!text || !cat) return ui.showToast('Select Category & Type Text', 'error');
 
+        // SPAM FILTER: Zuia link na namba za simu kama sio Admin
+        if(currentUser.role !== 'admin' && isSpamText(text)) {
+            return ui.showToast('Hauruhusiwi kuweka Link au Namba ya simu!', 'error');
+        }
+
         const userSnap = await getDoc(doc(db, "users", currentUser.id));
         const freshUser = userSnap.data();
 
+        // AUTO APPROVE LOGIC: Zote zinakuwa 'approved' moja kwa moja
         await addDoc(collection(db, "posts"), {
             authorId: currentUser.id, authorName: freshUser.username, authorPic: freshUser.pic || "",
             authorVerified: freshUser.verified || false, text: text, category: cat,
-            status: freshUser.role === 'admin' ? 'approved' : 'pending',
+            status: 'approved', 
             timestamp: Date.now(), likes: [], comments: [], fakeLikes: 0
         });
         
-        ui.showToast(freshUser.role === 'admin' ? 'Posted Successfully!' : 'Sent for Admin Review!', 'success');
+        ui.showToast('Imepostiwa Kikamilifu!', 'success');
         document.getElementById('post-text').value = '';
         document.getElementById('post-category').value = '';
         router.navigate('home');
@@ -336,6 +277,9 @@ window.appFeatures = {
         const newText = prompt("Edit text:", oldText);
         
         if(newText !== null && newText.trim() !== "") {
+            if(currentUser.role !== 'admin' && isSpamText(newText)) {
+                return ui.showToast('Hauruhusiwi kuweka Link au Namba ya simu!', 'error');
+            }
             await updateDoc(postRef, { text: newText.trim() });
             ui.showToast('Post updated successfully', 'success');
             
@@ -531,6 +475,10 @@ window.appFeatures = {
         const input = document.getElementById('comment-input');
         const text = input.value.trim();
         if (!text) return ui.showToast('Comment cannot be empty', 'error');
+        
+        if(currentUser.role !== 'admin' && isSpamText(text)) {
+            return ui.showToast('Hauruhusiwi kuweka Link au Namba ya simu!', 'error');
+        }
         
         const postRef = doc(db, "posts", currentCommentPostId);
         const newComment = { uId: currentUser.id, username: currentUser.username, verified: currentUser.verified || false, text: text, time: Date.now() };
@@ -1096,6 +1044,9 @@ document.addEventListener('DOMContentLoaded', () => {
         appFeatures.renderAnnouncementsToFeed();
 
         setInterval(ui.createFallingHeart, 1500);
+        
+        // CHECK MESEJI MPYA ZA CHAT 
+        checkNewMessages();
         
         onSnapshot(doc(db, "users", currentUser.id), (docSnap) => {
             if(docSnap.exists()) {
