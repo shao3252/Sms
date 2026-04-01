@@ -54,10 +54,9 @@ const getVerifiedIcon = (v) => v ? `<span class="verified-badge" style="width:12
 
 window.chatSystem = {
     init: () => {
-        // Sasisha muda unapoingia chat
         localStorage.setItem('st_chat_last_seen', Date.now());
 
-        // CHUKUA TAARIFA ZA GROUP (Kama limefungwa, Group Admins n.k)
+        // CHUKUA TAARIFA ZA GROUP
         const gRef = doc(db, "system", "group_settings");
         onSnapshot(gRef, (snap) => {
             if(snap.exists()){
@@ -73,7 +72,6 @@ window.chatSystem = {
                 }
                 
                 const stat = document.getElementById('group-status');
-                const lockBtn = document.getElementById('admin-lock-btn');
                 const input = document.getElementById('chat-msg-input');
 
                 if(isGroupOpen) { 
@@ -81,11 +79,9 @@ window.chatSystem = {
                     stat.style.color = "var(--success)"; 
                     input.disabled = false; 
                     input.placeholder = "Andika ujumbe..."; 
-                    lockBtn.innerText = "🔓"; 
                 } else { 
                     stat.innerText = "Group Limefungwa"; 
                     stat.style.color = "var(--danger)"; 
-                    lockBtn.innerText = "🔒"; 
                     
                     if(!isGroupAdmin) { 
                         input.disabled = true; 
@@ -93,8 +89,13 @@ window.chatSystem = {
                     } 
                 }
 
+                // Onyesha kitufe cha Settings kwa Admin
                 if(isGroupAdmin) {
-                    lockBtn.style.display = 'block';
+                    document.getElementById('group-settings-btn').style.display = 'block';
+                    document.getElementById('toggle-lock-btn').innerText = isGroupOpen ? '🔒 Funga Group (Lock)' : '🔓 Fungua Group (Unlock)';
+                    document.getElementById('toggle-lock-btn').style.color = isGroupOpen ? 'var(--danger)' : 'var(--success)';
+                } else {
+                    document.getElementById('group-settings-btn').style.display = 'none';
                 }
 
                 // Pinned Messages Count
@@ -138,7 +139,6 @@ window.chatSystem = {
 
                 const time = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
-                // Jina linaonekana kama sio meseji yako
                 const sender = isMine ? '' : `<strong style="font-size:0.8rem; color:var(--primary); display:flex; align-items:center; gap:5px; margin-bottom:5px; cursor:pointer;" onclick="chatSystem.directProfile('${m.uId}')">${sanitize(m.username)} ${getVerifiedIcon(m.verified)}</strong>`;
 
                 div.innerHTML = `
@@ -148,13 +148,12 @@ window.chatSystem = {
                     <span class="chat-time">${time}</span>
                 `;
                 
-                // KUBONYEZA MESEJI ILI KUPATA OPTIONS KAMA TELEGRAM
+                // KUBONYEZA MESEJI KUPATA OPTIONS
                 div.onclick = (e) => {
                     e.preventDefault();
                     
                     selectedMsg = { id: d.id, text: m.text, uId: m.uId, username: m.username };
                     
-                    // Admin options
                     document.getElementById('opt-pin').style.display = isGroupAdmin ? 'block' : 'none';
                     document.getElementById('opt-delete').style.display = (isMine || isGroupAdmin) ? 'block' : 'none';
                     
@@ -201,6 +200,12 @@ window.chatSystem = {
         
         input.value = ''; 
         chatSystem.cancelReply();
+        
+        // Push scroll chini
+        setTimeout(() => {
+            const box = document.getElementById('global-chat-box');
+            box.scrollTop = box.scrollHeight;
+        }, 100);
     },
 
     actionReply: () => {
@@ -265,25 +270,58 @@ window.chatSystem = {
         window.location.href = 'index.html';
     },
 
+    /* ---- SETTINGS MPYA ZA KUBADILI GROUP (Kutokea kwenye Settings Modal) ---- */
+    
     toggleGroupLock: async () => {
         const groupRef = doc(db, "system", "group_settings");
         await updateDoc(groupRef, { isOpen: !isGroupOpen });
+        ui.hideModal('group-settings-modal');
+        ui.showToast(isGroupOpen ? "Group Limefungwa (Locked)" : "Group Limefunguliwa (Unlocked)", "success");
     },
 
-    showGroupInfo: async () => {
-        if(!isGroupAdmin) return;
-        const newName = prompt("Badili jina la Group:", document.getElementById('group-title').innerText);
-        if(newName) {
-            await updateDoc(doc(db, "system", "group_settings"), { groupName: newName });
+    editGroupName: async () => {
+        const currentName = document.getElementById('group-title').innerText;
+        const newName = prompt("Ingiza jina jipya la Group:", currentName);
+        
+        if(newName && newName.trim() !== "") {
+            await updateDoc(doc(db, "system", "group_settings"), { groupName: newName.trim() });
+            ui.hideModal('group-settings-modal');
+            ui.showToast("Jina limebadilishwa", "success");
         }
     },
 
-    editGroupImage: () => {
-        if(!isGroupAdmin) return;
-        const url = prompt("Weka Link ya Picha Mpya ya Group (URL):");
-        if(url) {
-            updateDoc(doc(db, "system", "group_settings"), { groupPic: url });
-        }
+    uploadGroupImage: (e) => {
+        const file = e.target.files[0]; 
+        if (!file) return; 
+        
+        ui.showToast('Inapakia picha...', 'info');
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = async () => {
+                // Compress image to save database space
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 400;
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const base64Compressed = canvas.toDataURL('image/jpeg', 0.6);
+
+                try {
+                    await updateDoc(doc(db, "system", "group_settings"), { groupPic: base64Compressed });
+                    ui.showToast('Picha ya Group imebadilishwa!', 'success');
+                    ui.hideModal('group-settings-modal');
+                } catch(error) {
+                    ui.showToast('Imeshindwa kupakia. Jaribu tena.', 'error');
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
     },
 
     showAllPinned: async () => {
@@ -307,6 +345,14 @@ document.getElementById('chat-msg-input').addEventListener('keypress', function 
     if (e.key === 'Enter') {
         chatSystem.sendGlobalMessage();
     }
+});
+
+// Kusaidia kusukuma screen uki-focus Input kwenye simu
+document.getElementById('chat-msg-input').addEventListener('focus', () => {
+    setTimeout(() => {
+        const box = document.getElementById('global-chat-box');
+        box.scrollTop = box.scrollHeight;
+    }, 300);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
