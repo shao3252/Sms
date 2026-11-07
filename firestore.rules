@@ -186,7 +186,7 @@ service cloud.firestore {
           request.resource.data.text is string &&
           request.resource.data.text.size() > 0 &&
           request.resource.data.text.size() <= 2000 &&
-          (!('replyTo' in request.resource.data) || request.resource.data.replyTo is map) &&
+          (!('replyTo' in request.resource.data) || request.resource.data.replyTo == null || request.resource.data.replyTo is map) &&
           request.resource.data.deleted == false;
         allow update: if isGroupAdmin(groupId) ||
           (signedIn() && resource.data.authorId == request.auth.uid &&
