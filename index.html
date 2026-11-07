@@ -42,9 +42,9 @@
 
             <div id="register-form" class="auth-box" style="display:none;">
                 <h2 data-i18n="regHeader">Jisajili</h2>
-                <input type="text" id="reg-user" placeholder="Username" autocomplete="username">
-                <input type="email" id="reg-email" placeholder="Email" autocomplete="email">
-                <input type="password" id="reg-pass" placeholder="Password" autocomplete="new-password">
+                <input type="text" id="reg-user" data-i18n-placeholder="usernamePlaceholder" placeholder="Jina la mtumiaji" autocomplete="username">
+                <input type="email" id="reg-email" data-i18n-placeholder="emailPlaceholder" placeholder="Barua pepe" autocomplete="email">
+                <input type="password" id="reg-pass" data-i18n-placeholder="passwordPlaceholder" placeholder="Nenosiri" autocomplete="new-password">
                 <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
                 <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
                 <p style="margin-top:12px;">Tayari una akaunti? <span onclick="appAuth.showAuth('login')" class="link">Ingia / Login</span></p>
@@ -52,8 +52,8 @@
 
             <div id="login-form" class="auth-box" style="display:none;">
                 <h2 data-i18n="loginHeader">Ingia</h2>
-                <input type="email" id="login-email" placeholder="Email" autocomplete="email">
-                <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+                <input type="email" id="login-email" data-i18n-placeholder="emailPlaceholder" placeholder="Barua pepe" autocomplete="email">
+                <input type="password" id="login-pass" data-i18n-placeholder="passwordPlaceholder" placeholder="Nenosiri" autocomplete="current-password">
                 <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
                 <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
                 <p style="margin-top:12px;">Hauna akaunti? <span onclick="appAuth.showAuth('register')" class="link">Jisajili / Create account</span></p>
