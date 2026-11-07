@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.verified == false
+        && request.resource.data.premium == false;
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.verified == resource.data.verified
+        && request.resource.data.premium == resource.data.premium;
+      allow delete: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn() &&
+        (resource.data.status == 'approved' || resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if signedIn() &&
+        request.resource.data.authorId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.authorId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])) ||
+        (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+      allow delete: if isAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
+    }
+
+    match /comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.followerId == request.auth.uid;
+    }
+
+    match /savedPosts/{savedId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted']));
+      allow delete: if isAdmin();
+    }
+
+    match /premiumRequests/{requestId} {
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /vipPosts/{postId} {
+      allow read: if isAdmin() ||
+        (signedIn() && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.premium == true);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /appeals/{appealId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
