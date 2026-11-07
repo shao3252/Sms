@@ -3,10 +3,12 @@ const $=id=>document.getElementById(id), esc=s=>String(s??"").replace(/[&<>"']/g
 const S={user:null,profile:null,admin:false,posts:[],filter:"All",commentPost:null,viewing:null,blocked:[]};
 const translations={
  sw:{
+  usernamePlaceholder:"Jina la mtumiaji",emailPlaceholder:"Barua pepe",passwordPlaceholder:"Nenosiri",loginLink:"Ingia",registerLink:"Jisajili",
   landingEyebrow:"KARIBU",landingDescription:"Gundua, shiriki na furahia meseji nzuri za mapenzi. Pata maneno sahihi kwa kila hisia.",landingStart:"Anza Sasa",landingTagline:"Mahali pa maneno yanayogusa moyo 💖",authChoiceTitle:"Karibu SMS TAMU 💖",authChoiceDescription:"Chagua unachotaka kufanya",authLoginChoice:"Ingia",authRegisterChoice:"Jisajili",backBtn:"← Rudi",
   welcomeSub:"Shiriki meseji tamu za mapenzi",regHeader:"Jisajili",regBtn:"Jisajili",haveAccount:"Tayari una akaunti?",loginHeader:"Ingia",loginBtn:"Ingia",noAccount:"Hauna akaunti?",catAll:"Yote",catApology:"Kuomba Msamaha",catPraise:"Kusifia",catSeductive:"Kuvutia",catOther:"Mengineyo",draftTitle:"Andika Meseji",catSelect:"Chagua Kundi...",sendApprovalBtn:"Tuma Ikaguliwe",followingText:"Unafuata",followersText:"Wanaokufuata",editProfileBtn:"Badili Wasifu",myPostsTab:"Posti Zangu",likedTab:"Zilizopendwa",savedTab:"Zilizohifadhiwa",postsTitle:"Posti",myReportsBtn:"Ripoti Zangu",navHome:"Nyumbani",navSearch:"Tafuta",navChat:"Chat",navProfile:"Wasifu",closeBtn:"Funga",settingsTitle:"Mipangilio",toggleTheme:"🌓 Badili Muonekano",reportBugBtn:"🐞 Ripoti Tatizo",logoutBtn:"🚪 Toka (Logout)"
  },
  en:{
+  usernamePlaceholder:"Username",emailPlaceholder:"Email address",passwordPlaceholder:"Password",loginLink:"Login",registerLink:"Create account",
   landingEyebrow:"WELCOME TO",landingDescription:"Discover, share and enjoy beautiful love messages. Find the right words for every feeling.",landingStart:"Get Started",landingTagline:"A place for words that touch the heart 💖",authChoiceTitle:"Welcome to SMS TAMU 💖",authChoiceDescription:"Choose what you would like to do",authLoginChoice:"Login",authRegisterChoice:"Create account",backBtn:"← Back",
   welcomeSub:"Share sweet love messages",regHeader:"Create account",regBtn:"Register",haveAccount:"Already have an account?",loginHeader:"Login",loginBtn:"Login",noAccount:"Don't have an account?",catAll:"All",catApology:"Apology",catPraise:"Praise",catSeductive:"Attraction",catOther:"Other",draftTitle:"Write a message",catSelect:"Choose a category...",sendApprovalBtn:"Submit for review",followingText:"Following",followersText:"Followers",editProfileBtn:"Edit profile",myPostsTab:"My posts",likedTab:"Liked",savedTab:"Saved",postsTitle:"Posts",myReportsBtn:"My reports",navHome:"Home",navSearch:"Search",navChat:"Chat",navProfile:"Profile",closeBtn:"Close",settingsTitle:"Settings",toggleTheme:"🌓 Change appearance",reportBugBtn:"🐞 Report a problem",logoutBtn:"🚪 Log out"
  }
@@ -19,6 +21,7 @@ function applyLanguage(lang){
   const value=translations[selected][key];
   if(value)el.textContent=value;
  });
+ document.querySelectorAll("[data-i18n-placeholder]").forEach(el=>{const key=el.getAttribute("data-i18n-placeholder");const value=translations[selected][key];if(value)el.setAttribute("placeholder",value);});
  ["auth-lang","settings-lang"].forEach(id=>{const select=$(id);if(select)select.value=selected;});
  localStorage.setItem("st_lang",selected);
 }
