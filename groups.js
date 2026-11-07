@@ -40,7 +40,7 @@ function groupCard(group,joined=false,adminMode=false){
     : joined
       ? `<button class="btn-primary" onclick="groupsApp.openGroup('${group.id}')">Open</button>`
       : `<button class="btn-primary" onclick="groupsApp.joinGroup('${group.id}')">Join</button>`;
-  return `<article class="card group-card"><div class="group-card-icon">👥</div><div class="group-card-info"><h4>${esc(group.name)}</h4><p>${esc(group.description||"A community group")}</p><small>${Number(group.memberCount||0)} members · ${group.status==='active'?'Active':'Suspended'}</small></div><div class="group-card-actions">${action}</div></article>`;
+  return `<article class="card group-card"><div class="group-card-icon">👥</div><div class="group-card-info"><h4>${esc(group.name)}</h4><p>${esc(group.description||"A community group")}</p><small>Public group · ${group.status==='active'?'Active':group.status==='suspended'?'Suspended':'Removed'}</small></div><div class="group-card-actions">${action}</div></article>`;
 }
 async function loadGroups(){
   if(!user)return;
@@ -72,7 +72,7 @@ async function createGroup(event){
   const name=$("new-group-name").value.trim(),description=$("new-group-description").value.trim();
   if(name.length<3||name.length>50){toast("Group name must be 3–50 characters.","error");return;}
   try{
-    const created=await F.addDoc(F.collection(F.db,"groups"),{name,description,ownerId:user.uid,createdBy:user.uid,visibility:"public",status:"active",memberCount:1,createdAt:F.serverTimestamp()});
+    const created=await F.addDoc(F.collection(F.db,"groups"),{name,description,ownerId:user.uid,createdBy:user.uid,visibility:"public",status:"active",createdAt:F.serverTimestamp()});
     try{
       await F.setDoc(memberRef(created.id,user.uid),{uid:user.uid,username:profile.username||user.displayName||"Member",role:"owner",joinedAt:F.serverTimestamp()});
     }catch(e){await F.deleteDoc(created);throw e;}
@@ -86,7 +86,7 @@ async function joinGroup(id){
     const member=memberRef(id,user.uid),existing=await F.getDoc(member);
     if(!existing.exists()){
       await F.setDoc(member,{uid:user.uid,username:profile.username||user.displayName||"Member",role:"member",joinedAt:F.serverTimestamp()});
-      await F.updateDoc(ref,{memberCount:F.increment(1)});
+
     }
     toast("You joined the group.","success");await loadGroups();await openGroup(id);
   }catch(e){toast(errorText(e),"error");}
@@ -96,7 +96,6 @@ async function leaveGroup(){
   if(activeMember.role==="owner"){toast("The group owner cannot leave. Delete the group or transfer ownership first.","error");return;}
   try{
     await F.deleteDoc(memberRef(activeGroup.id,user.uid));
-    await F.updateDoc(groupRef(activeGroup.id),{memberCount:F.increment(-1)});
     toast("You left the group.","success");showHome();await loadGroups();
   }catch(e){toast(errorText(e),"error");}
 }
@@ -121,7 +120,7 @@ async function openGroup(id){
       const box=$("group-messages");
       box.innerHTML=result.docs.map(d=>{
         const m=d.data();
-        return `<article class="group-message ${m.authorId===user.uid?'mine':''}"><b>${esc(m.username||"Member")}</b><p>${esc(m.text)}</p><small>${m.createdAt?.toDate?m.createdAt.toDate().toLocaleString():""}</small>${m.deleted?'<em>Message removed</em>':""}${(websiteAdmin||m.authorId===user.uid)?`<button class="group-message-delete" onclick="groupsApp.deleteMessage('${id}','${d.id}')">Delete</button>`:""}</article>`;
+        return `<article class="group-message ${m.authorId===user.uid?'mine':''}"><b>${esc(m.username||"Member")}</b><p>${esc(m.text)}</p><small>${m.createdAt?.toDate?m.createdAt.toDate().toLocaleString():""}</small>${m.deleted?'<em>Message removed</em>':""}${(websiteAdmin||m.authorId===user.uid||["owner","admin"].includes(activeMember.role))?`<button class="group-message-delete" onclick="groupsApp.deleteMessage('${id}','${d.id}')">Delete</button>`:""}</article>`;
       }).join("")||'<p class="groups-muted">No messages yet. Say hello!</p>';
       box.scrollTop=box.scrollHeight;
     },e=>{$("group-messages").innerHTML='<p class="groups-error">'+esc(errorText(e))+'</p>';});
@@ -157,7 +156,6 @@ async function showMembers(){
 async function removeMember(groupId,uid){
   try{
     await F.deleteDoc(memberRef(groupId,uid));
-    await F.updateDoc(groupRef(groupId),{memberCount:F.increment(-1)});
     toast("Member removed.","success");await showMembers();
   }catch(e){toast(errorText(e),"error");}
 }
@@ -168,8 +166,8 @@ async function toggleStatus(id,status){
 }
 async function deleteGroup(id){
   if(!websiteAdmin)return;
-  if(!confirm("Delete this group? Its messages and members will no longer be accessible."))return;
-  try{await F.deleteDoc(groupRef(id));toast("Group deleted.","success");showHome();await loadGroups();}
+  if(!confirm("Remove this group from SMS TAMU? Members will no longer be able to open it."))return;
+  try{await F.updateDoc(groupRef(id),{status:"removed",updatedAt:F.serverTimestamp()});toast("Group removed.","success");showHome();await loadGroups();}
   catch(e){toast(errorText(e),"error");}
 }
 window.groupsApp={openGroup,joinGroup,deleteMessage,showMembers,removeMember,toggleStatus,deleteGroup};
