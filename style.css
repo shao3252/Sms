@@ -641,3 +641,6 @@ textarea { resize: none; height: 100px; }
 .chat-group-member button,.chat-group-remove-msg { border:0; background:none; color:var(--danger); cursor:pointer; }
 .chat-group-remove-msg { display:block; font-size:.72rem; margin-top:5px; }
 .chat-input-hidden { display:none !important; }
+
+#chat-group-room:not([hidden]) { display:flex; flex:1; min-height:0; flex-direction:column; overflow:hidden; }
+#chat-group-room .chat-group-messages { flex:1; min-height:0; }
