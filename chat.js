@@ -32,6 +32,7 @@ function switchChatTab(which){
  const groups=which==="groups";
  $("my-groups-panel").hidden=!groups;
  $("global-chat-box").hidden=groups;
+ $("pinned-bar").hidden=groups;
  $("chat-input-area")?.classList.toggle("chat-input-hidden",groups);
  $("tab-global-chat").classList.toggle("active",!groups);
  $("tab-my-groups").classList.toggle("active",groups);
