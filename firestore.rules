@@ -138,6 +138,7 @@ service cloud.firestore {
         ((resource.data.visibility == 'public' && resource.data.status == 'active') ||
          isGroupMember(groupId) || isAdmin());
       allow create: if notRestricted() &&
+        request.resource.data.keys().hasOnly(['name', 'description', 'ownerId', 'createdBy', 'visibility', 'status', 'createdAt']) &&
         request.resource.data.ownerId == request.auth.uid &&
         request.resource.data.createdBy == request.auth.uid &&
         request.resource.data.name is string &&
@@ -160,6 +161,7 @@ service cloud.firestore {
           (signedIn() && request.auth.uid == memberId);
         allow create: if notRestricted() &&
           signedIn() && request.auth.uid == memberId &&
+          request.resource.data.keys().hasOnly(['uid', 'username', 'role', 'joinedAt']) &&
           request.resource.data.uid == request.auth.uid &&
           request.resource.data.joinedAt != null &&
           ((request.resource.data.role == 'owner' &&
@@ -179,6 +181,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isAdmin() || isGroupMember(groupId);
         allow create: if notRestricted() && isGroupMember(groupId) &&
+          request.resource.data.keys().hasOnly(['authorId', 'username', 'text', 'createdAt', 'deleted']) &&
           request.resource.data.authorId == request.auth.uid &&
           request.resource.data.text is string &&
           request.resource.data.text.size() > 0 &&
