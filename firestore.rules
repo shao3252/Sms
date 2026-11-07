@@ -135,7 +135,7 @@ service cloud.firestore {
 
     match /groups/{groupId} {
       allow read: if signedIn() &&
-        ((resource.data.visibility == 'public' && resource.data.status == 'active') ||
+        (resource.data.visibility == 'public' ||
          isGroupMember(groupId) || isAdmin());
       allow create: if notRestricted() &&
         request.resource.data.keys().hasOnly(['name', 'description', 'ownerId', 'createdBy', 'visibility', 'status', 'createdAt']) &&
