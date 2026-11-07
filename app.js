@@ -9,7 +9,7 @@ const adminCheck=async uid=>(await F.getDoc(ref("admins",uid))).exists();
 const val=id=>$(id)?.value?.trim()||"";
 const show=(id,on=true)=>$(id)?.classList.toggle("active",on);
 window.ui={showModal:id=>show(id),hideModal:id=>show(id,false),toggleTheme(){document.body.classList.toggle("dark");localStorage.setItem("st_theme",document.body.classList.contains("dark")?"dark":"light");}};
-window.router={navigate(n){document.querySelectorAll(".view").forEach(e=>e.classList.remove("active"));$("view-"+n)?.classList.add("active");if(n==="home")loadFeed();if(n==="profile")loadProfilePosts("own");if(n==="admin"&&!S.admin)toast("Admin access only");}};
+window.router={navigate(n){if(n==="admin"&&!S.admin){toast("Admin access only");n="profile";}document.querySelectorAll(".view").forEach(e=>e.classList.remove("active"));$("view-"+n)?.classList.add("active");if(n==="home")loadFeed();if(n==="profile")loadProfilePosts("own");if(n==="my-reports")window.appFeatures.loadMyReports();}};
 window.appAuth={
  toggleAuth(){const a=$("register-form"),b=$("login-form"),v=a.style.display==="none";a.style.display=v?"block":"none";b.style.display=v?"none":"block";},
  async register(){try{const u=val("reg-user"),e=val("reg-email"),p=val("reg-pass");if(u.length<3||p.length<6)throw Error("Username must be 3+ characters and password 6+ characters.");const c=await F.createUserWithEmailAndPassword(F.auth,e,p);await F.updateProfile(c.user,{displayName:u});await F.setDoc(profile(c.user.uid),{username:u,bio:"",photoURL:"",role:"user",verified:false,premium:false,createdAt:F.serverTimestamp()});toast("Account created");}catch(e){toast(e.message);}},
