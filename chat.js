@@ -1,10 +1,17 @@
 import * as F from "./firebase.js";
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let user,profile,admin=false,selected=null,reply=null,locked=false;
-const toast=s=>$("toast-container").textContent=s;
+let toastTimer=null;
+const toast=(message,type)=>{
+ const host=$("toast-container");if(!host)return;
+ host.replaceChildren();const item=document.createElement("div");
+ item.className="toast "+(type||"info");item.textContent=String(message??"");
+ item.setAttribute("role",type==="error"?"alert":"status");host.appendChild(item);host.classList.add("visible");
+ clearTimeout(toastTimer);toastTimer=setTimeout(()=>host.classList.remove("visible"),type==="error"?4500:2500);
+};
 window.ui={showModal:id=>$(id)?.classList.add("active"),hideModal:id=>$(id)?.classList.remove("active")};
 window.chatSystem={
- async sendGlobalMessage(){if(!user)return toast("Sign in first");const t=$("chat-msg-input").value.trim();if(!t)return;if(locked&&!admin)return toast("Chat is locked");await F.addDoc(F.collection(F.db,"messages"),{uid:user.uid,username:profile.username,text:t,replyTo:reply,createdAt:F.serverTimestamp(),deleted:false});$("chat-msg-input").value="";reply=null;$("reply-preview").style.display="none";},
+ async sendGlobalMessage(){if(!user)return toast("Sign in first","error");const t=$("chat-msg-input").value.trim();if(!t)return;if(locked&&!admin)return toast("Chat is locked","error");try{await F.addDoc(F.collection(F.db,"messages"),{uid:user.uid,username:profile.username||user.displayName||"Member",text:t,replyTo:reply,createdAt:F.serverTimestamp(),deleted:false});$("chat-msg-input").value="";reply=null;$("reply-preview").style.display="none";}catch(e){console.error("Global chat send failed:",e);toast(e?.code==="permission-denied"?"You cannot send a message in this chat.":"Message could not be sent. Check your connection and try again.","error");}},
  cancelReply(){reply=null;$("reply-preview").style.display="none";},
  async showAllPinned(){const x=await F.getDocs(F.query(F.collection(F.db,"messages"),F.where("pinned","==",true),F.limit(50)));$("pinned-list-container").innerHTML=x.docs.map(d=>esc(d.data().text)).join("<hr>")||"No pinned messages";ui.showModal("pinned-modal");},
  async editGroupName(){if(!admin)return;const n=prompt("New group name");if(n)await F.setDoc(F.doc(F.db,"settings","group"),{name:n},{merge:true});},
