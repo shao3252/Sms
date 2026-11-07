@@ -789,3 +789,21 @@ textarea { resize: none; height: 100px; }
         max-width: 90%;
     }
 }
+
+
+/* Original SMS TAMU feed poster layout */
+.post-card { padding:16px; margin:0 0 16px; border:1px solid var(--border); background:var(--card-bg); }
+.post-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer; }
+.post-header .avatar { width:42px; height:42px; flex:0 0 42px; border-radius:50%; background:var(--border); object-fit:cover; }
+.post-meta { flex:1; min-width:0; }
+.post-author { display:flex; align-items:center; gap:5px; color:var(--text-main); font-size:1rem; font-weight:700; overflow-wrap:anywhere; }
+.post-time { margin-top:2px; color:var(--text-muted); font-size:.78rem; }
+.verified-badge,.premium-badge { display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; font-size:.72rem; }
+.verified-badge { background:#2788e8; color:#fff; }
+.premium-badge { color:#c18b13; background:rgba(230,180,45,.14); }
+.post-status { flex:0 0 auto; padding:3px 8px; border-radius:10px; background:rgba(255,193,7,.16); color:#9a6b00; font-size:.72rem; font-weight:700; }
+.post-text { margin:0 0 14px; color:var(--text-main); font-size:1.05rem; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; }
+.post-category-label { display:inline-block; margin:0 0 12px; padding:4px 9px; border-radius:20px; color:var(--primary); background:rgba(255,71,126,.10); font-size:.76rem; font-weight:700; }
+.post-actions { display:flex; flex-wrap:wrap; justify-content:space-around; gap:5px; padding-top:10px; border-top:1px solid var(--border); }
+.post-actions .action-btn { display:flex; align-items:center; gap:6px; padding:7px 10px; border:0; border-radius:9px; background:transparent; color:var(--text-muted); font-size:.88rem; cursor:pointer; }
+.post-actions .action-btn:hover,.post-actions .action-btn.active { color:var(--primary); background:rgba(255,71,126,.08); }
