@@ -18,10 +18,10 @@ service cloud.firestore {
         && request.resource.data.role == 'user'
         && request.resource.data.verified == false
         && request.resource.data.premium == false;
-      allow update: if signedIn() && request.auth.uid == uid
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
         && request.resource.data.role == resource.data.role
         && request.resource.data.verified == resource.data.verified
-        && request.resource.data.premium == resource.data.premium;
+        && request.resource.data.premium == resource.data.premium);
       allow delete: if isAdmin();
     }
 
@@ -34,7 +34,12 @@ service cloud.firestore {
       allow update: if isAdmin() ||
         (signedIn() && resource.data.authorId == request.auth.uid &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])) ||
-        (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+        (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+         && request.resource.data.likes is list && resource.data.likes is list
+         && request.resource.data.likes.toSet().difference(resource.data.likes.toSet()).hasOnly([request.auth.uid])
+         && resource.data.likes.toSet().difference(request.resource.data.likes.toSet()).hasOnly([request.auth.uid])
+         && request.resource.data.likes.toSet().difference(resource.data.likes.toSet()).size()
+            + resource.data.likes.toSet().difference(request.resource.data.likes.toSet()).size() == 1);
       allow delete: if isAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
     }
 
@@ -91,7 +96,8 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow read, update, delete: if isAdmin();
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
     }
 
     match /appeals/{appealId} {
