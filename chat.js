@@ -18,7 +18,7 @@ window.chatSystem={
  async toggleGroupLock(){if(!admin)return;locked=!locked;await F.setDoc(F.doc(F.db,"settings","group"),{locked},{merge:true});$("toggle-lock-btn").textContent=locked?"🔓 Fungua Group (Unlock)":"🔒 Funga Group (Lock)";toast(locked?"Group locked":"Group unlocked");},
  actionReply(){if(!selected)return;reply={id:selected.id,text:selected.text,username:selected.username};$("reply-name").textContent=selected.username;$("reply-text").textContent=selected.text;$("reply-preview").style.display="block";ui.hideModal("msg-options-modal");},
  actionCopy(){if(selected)navigator.clipboard?.writeText(selected.text);ui.hideModal("msg-options-modal");},
- actionViewProfile(){ui.hideModal("msg-options-modal");location.href="index.html";},
+ actionViewProfile(){ui.hideModal("msg-options-modal");if(selected?.uid)chatSystemViewProfile(selected.uid);},
  async actionPin(){if(admin&&selected)await F.updateDoc(F.doc(F.db,"messages",selected.id),{pinned:!selected.pinned});ui.hideModal("msg-options-modal");},
  actionMakeAdmin(){toast("Manage admin access in Firebase Console.");},actionRemoveAdmin(){toast("Manage admin access in Firebase Console.");},actionBlockUser(){toast("User restriction tools are not enabled yet.");},
  async actionDelete(){if(selected&&(admin||selected.uid===user.uid))await F.updateDoc(F.doc(F.db,"messages",selected.id),{deleted:true});ui.hideModal("msg-options-modal");},
@@ -155,7 +155,7 @@ window.chatSystemViewProfile=async uid=>{
  if(!uid)return;
  try{const snap=await F.getDoc(F.doc(F.db,"profiles",uid));if(!snap.exists())return toast("Profile not found.","error");const p=snap.data();
  $("chat-profile-name").textContent=p.username||"Member";$("chat-profile-bio").textContent=p.bio||"No bio added yet.";$("chat-profile-photo").src=p.photoURL||"";$("chat-profile-verified").textContent=p.verified?"✓ Verified":"";$("chat-profile-premium").textContent=p.premium?"🌟 Premium":"";$("chat-profile-uid").textContent=uid===user.uid?"Your profile":"Member profile";
- $("chat-profile-open").onclick=()=>{location.href="index.html?profile="+encodeURIComponent(uid);};$("chat-profile-modal").classList.add("active");
+ $("chat-profile-open").onclick=()=>ui.hideModal("chat-profile-modal");$("chat-profile-modal").classList.add("active");
  }catch(e){console.error("Profile preview failed:",e);toast("Could not load this profile.","error");}
 };
 window.chatSystemSelect=async id=>{const snap=await F.getDoc(F.doc(F.db,"messages",id));if(snap.exists()){selected={id,...snap.data()};$("opt-pin").style.display=admin?"block":"none";$("opt-delete").style.display=(admin||selected.uid===user.uid)?"block":"none";$("opt-block").style.display=admin&&selected.uid!==user.uid?"block":"none";$("opt-admin-make").style.display="none";$("opt-admin-remove").style.display="none";ui.showModal("msg-options-modal");}};
