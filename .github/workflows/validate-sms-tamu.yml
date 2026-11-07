@@ -1,0 +1,24 @@
+name: Validate SMS TAMU rebuild
+
+on:
+  push:
+    branches: [sms-tamu-firebase-rebuild]
+  pull_request:
+    branches: [main]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript module syntax
+        run: |
+          node --input-type=module --check < app.js
+          node --input-type=module --check < chat.js
+          node --input-type=module --check < premium.js
+          node --input-type=module --check < firebase.js

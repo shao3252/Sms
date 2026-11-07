@@ -1,0 +1,202 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function notRestricted() {
+      return signedIn() &&
+        !exists(/databases/$(database)/documents/banned/$(request.auth.uid));
+    }
+    function autoApproveEnabled() {
+      return exists(/databases/$(database)/documents/settings/moderation) &&
+        get(/databases/$(database)/documents/settings/moderation).data.autoApprove == true;
+    }
+
+    match /admins/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if false;
+    }
+
+    match /banned/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /profiles/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'user'
+        && request.resource.data.verified == false
+        && request.resource.data.premium == false;
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.verified == resource.data.verified
+        && request.resource.data.premium == resource.data.premium);
+      allow delete: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn() &&
+        (resource.data.status == 'approved' || resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if signedIn() &&
+        notRestricted() && request.resource.data.authorId == request.auth.uid &&
+        (request.resource.data.status == 'pending' ||
+         (request.resource.data.status == 'approved' && (isAdmin() || autoApproveEnabled())));
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.authorId == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])) ||
+        (signedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+         && request.resource.data.likes is list && resource.data.likes is list
+         && request.resource.data.likes.toSet().difference(resource.data.likes.toSet()).hasOnly([request.auth.uid])
+         && resource.data.likes.toSet().difference(request.resource.data.likes.toSet()).hasOnly([request.auth.uid])
+         && request.resource.data.likes.toSet().difference(resource.data.likes.toSet()).size()
+            + resource.data.likes.toSet().difference(request.resource.data.likes.toSet()).size() == 1);
+      allow delete: if isAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
+    }
+
+    match /comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if notRestricted() && request.resource.data.authorId == request.auth.uid;
+      allow update, delete: if isAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
+    }
+
+    match /follows/{followId} {
+      allow read: if signedIn();
+      allow create: if notRestricted() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.followerId == request.auth.uid;
+    }
+
+    match /userBlocks/{blockId} {
+      allow read: if signedIn() && resource.data.blockerId == request.auth.uid;
+      allow create: if notRestricted() && request.resource.data.blockerId == request.auth.uid
+        && request.resource.data.blockedId != request.auth.uid;
+      allow delete: if signedIn() && resource.data.blockerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /savedPosts/{savedId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if notRestricted() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if notRestricted() && request.resource.data.uid == request.auth.uid;
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.uid == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted']));
+      allow delete: if isAdmin();
+    }
+
+    match /premiumRequests/{requestId} {
+      allow create: if notRestricted() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /vipPosts/{postId} {
+      allow read: if isAdmin() ||
+        (signedIn() && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.premium == true);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if notRestricted() && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    function isGroupMember(groupId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+    }
+    function isGroupAdmin(groupId) {
+      return isAdmin() || (isGroupMember(groupId) &&
+        get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role in ['owner', 'admin']);
+    }
+
+    match /groups/{groupId} {
+      allow read: if signedIn() &&
+        (resource.data.visibility == 'public' ||
+         isGroupMember(groupId) || isAdmin());
+      allow create: if notRestricted() &&
+        request.resource.data.keys().hasOnly(['name', 'description', 'ownerId', 'createdBy', 'visibility', 'status', 'createdAt']) &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 3 &&
+        request.resource.data.name.size() <= 50 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 300 &&
+        request.resource.data.visibility == 'public' &&
+        request.resource.data.status == 'active';
+      allow update: if isAdmin() ||
+        (signedIn() && resource.data.ownerId == request.auth.uid &&
+         request.resource.data.ownerId == resource.data.ownerId &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['name', 'description', 'photoURL', 'updatedAt']));
+      allow delete: if isAdmin() ||
+        (signedIn() && resource.data.ownerId == request.auth.uid);
+
+      match /members/{memberId} {
+        allow read: if isAdmin() || isGroupMember(groupId) ||
+          (signedIn() && request.auth.uid == memberId);
+        allow create: if notRestricted() &&
+          signedIn() && request.auth.uid == memberId &&
+          request.resource.data.keys().hasOnly(['uid', 'username', 'role', 'joinedAt']) &&
+          request.resource.data.uid == request.auth.uid &&
+          request.resource.data.joinedAt != null &&
+          ((request.resource.data.role == 'owner' &&
+            get(/databases/$(database)/documents/groups/$(groupId)).data.ownerId == request.auth.uid) ||
+           (request.resource.data.role == 'member' &&
+            get(/databases/$(database)/documents/groups/$(groupId)).data.visibility == 'public' &&
+            get(/databases/$(database)/documents/groups/$(groupId)).data.status == 'active'));
+        allow update: if isGroupAdmin(groupId) &&
+          memberId != request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']) &&
+          request.resource.data.role in ['admin', 'member'];
+        allow delete: if (isGroupAdmin(groupId) &&
+          memberId != request.auth.uid && resource.data.role != 'owner') ||
+          (signedIn() && memberId == request.auth.uid && resource.data.role != 'owner');
+      }
+
+      match /messages/{messageId} {
+        allow read: if isAdmin() || isGroupMember(groupId);
+        allow create: if notRestricted() && isGroupMember(groupId) &&
+          request.resource.data.keys().hasOnly(['authorId', 'username', 'text', 'replyTo', 'createdAt', 'deleted']) &&
+          request.resource.data.authorId == request.auth.uid &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() > 0 &&
+          request.resource.data.text.size() <= 2000 &&
+          (!('replyTo' in request.resource.data) || request.resource.data.replyTo == null || request.resource.data.replyTo is map) &&
+          request.resource.data.deleted == false;
+        allow update: if isGroupAdmin(groupId) ||
+          (signedIn() && resource.data.authorId == request.auth.uid &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted']) &&
+           request.resource.data.deleted == true);
+        allow delete: if isGroupAdmin(groupId);
+      }
+    }
+
+    match /appeals/{appealId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

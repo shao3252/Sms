@@ -10,7 +10,7 @@
 <body>
 
 <div id="app">
-    <div id="toast-container"></div>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <div id="auth-screen" class="screen active">
         <div class="auth-container">
@@ -24,27 +24,39 @@
             <h1 class="logo-text">Sms Tamu 💖</h1>
             <p class="subtitle" data-i18n="welcomeSub">Shiriki meseji tamu za mapenzi</p>
             
-            <div id="register-form" class="auth-box">
-                <h2 data-i18n="regHeader">Jisajili</h2>
-                <input type="text" id="reg-user" placeholder="Username">
-                <input type="email" id="reg-email" placeholder="Email">
-                <input type="password" id="reg-pass" placeholder="Password">
-                <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
-                <p style="margin-top: 15px;">
-                    <span data-i18n="haveAccount">Tayari una akaunti?</span> 
-                    <span onclick="appAuth.toggleAuth()" class="link" data-i18n="loginHeader">Ingia</span>
-                </p>
+            <div id="landing-screen" class="auth-box" style="display:block; text-align:center; padding:30px 22px; background:linear-gradient(145deg, rgba(255,105,180,.16), rgba(100,149,237,.13)); border:1px solid rgba(255,105,180,.35);">
+                <div style="font-size:3.4rem; margin:8px 0 14px;">💌</div>
+                <p data-i18n="landingEyebrow" style="letter-spacing:3px; font-size:.75rem; font-weight:800; color:var(--primary); margin-bottom:10px;">KARIBU</p>
+                <h2 style="font-size:2rem; margin-bottom:12px;">UTAMU WA PENZI NENO</h2>
+                <p data-i18n="landingDescription" style="line-height:1.7; color:var(--text-muted); margin:0 auto 24px; max-width:320px;">Gundua, shiriki na furahia meseji nzuri za mapenzi. Pata maneno sahihi kwa kila hisia.</p>
+                <button onclick="appAuth.showAuth('choice')" class="btn-primary" style="width:100%; padding:15px; font-size:1rem;"><span data-i18n="landingStart">Anza Sasa</span>&nbsp; →</button>
+                <p data-i18n="landingTagline" style="font-size:.8rem; color:var(--text-muted); margin-top:18px;">Mahali pa maneno yanayogusa moyo 💖</p>
             </div>
 
-            <div id="login-form" class="auth-box" style="display: none;">
+            <div id="auth-choice" class="auth-box" style="display:none;">
+                <h2 data-i18n="authChoiceTitle">Karibu SMS TAMU 💖</h2>
+                <p data-i18n="authChoiceDescription" style="margin:12px 0 20px; color:var(--text-muted);">Chagua unachotaka kufanya</p>
+                <button onclick="appAuth.showAuth('login')" class="btn-primary" style="width:100%; margin-bottom:12px;" data-i18n="authLoginChoice">Ingia</button>
+                <button onclick="appAuth.showAuth('register')" class="btn-outline" style="width:100%;" data-i18n="authRegisterChoice">Jisajili</button>
+            </div>
+
+            <div id="register-form" class="auth-box" style="display:none;">
+                <h2 data-i18n="regHeader">Jisajili</h2>
+                <input type="text" id="reg-user" data-i18n-placeholder="usernamePlaceholder" placeholder="Jina la mtumiaji" autocomplete="username">
+                <input type="email" id="reg-email" data-i18n-placeholder="emailPlaceholder" placeholder="Barua pepe" autocomplete="email">
+                <input type="password" id="reg-pass" data-i18n-placeholder="passwordPlaceholder" placeholder="Nenosiri" autocomplete="new-password">
+                <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
+                <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
+                <p style="margin-top:12px;"><span data-i18n="haveAccount">Tayari una akaunti?</span> <span onclick="appAuth.showAuth('login')" class="link" data-i18n="loginLink">Ingia</span></p>
+            </div>
+
+            <div id="login-form" class="auth-box" style="display:none;">
                 <h2 data-i18n="loginHeader">Ingia</h2>
-                <input type="email" id="login-email" placeholder="Email">
-                <input type="password" id="login-pass" placeholder="Password">
+                <input type="email" id="login-email" data-i18n-placeholder="emailPlaceholder" placeholder="Barua pepe" autocomplete="email">
+                <input type="password" id="login-pass" data-i18n-placeholder="passwordPlaceholder" placeholder="Nenosiri" autocomplete="current-password">
                 <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
-                <p style="margin-top: 15px;">
-                    <span data-i18n="noAccount">Hauna akaunti?</span> 
-                    <span onclick="appAuth.toggleAuth()" class="link" data-i18n="regHeader">Jisajili</span>
-                </p>
+                <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
+                <p style="margin-top:12px;"><span data-i18n="noAccount">Hauna akaunti?</span> <span onclick="appAuth.showAuth('register')" class="link" data-i18n="registerLink">Jisajili</span></p>
             </div>
         </div>
     </div>
@@ -183,6 +195,7 @@
                 </div>
                 
                 <div class="admin-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <button class="btn-primary" onclick="appAdmin.renderOverview()">📊 Overview</button>
                     <button class="btn-outline" onclick="appAdmin.renderPending()">Pending Queue</button>
                     <button class="btn-outline" onclick="appAdmin.renderUsers()">Manage Users</button>
                     <button class="btn-outline" style="border-color:#d4af37; color:#d4af37;" onclick="appAdmin.renderPremiumReq()">VIP Requests</button>
@@ -201,6 +214,7 @@
             <button class="nav-item active" onclick="router.navigate('home')">🏠<span data-i18n="navHome">Nyumbani</span></button>
             <button class="nav-item" onclick="router.navigate('search')">🔍<span data-i18n="navSearch">Tafuta</span></button>
             <button class="nav-item create-btn" onclick="router.navigate('create')"><div class="plus-icon">+</div></button>
+            
             <button class="nav-item" onclick="window.location.href='chat.html'" style="position:relative;">
                 💬<span data-i18n="navChat">Chat</span>
                 <span id="chat-badge" class="badge chat-badge" style="display:none; background:var(--success);">0</span>
@@ -240,7 +254,7 @@
             <button class="btn-outline mt-1" style="width:100%" onclick="ui.hideModal('settings-modal'); ui.showModal('bug-modal');" data-i18n="reportBugBtn">🐞 Ripoti Tatizo</button>
             <button id="btn-appeal" class="btn-outline mt-1" style="width:100%; display:none; background:#fff3cd; color:#856404; border-color:#856404;" onclick="ui.hideModal('settings-modal'); ui.showModal('appeal-modal');">⚖️ Omba Kufunguliwa Block</button>
             <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
-            <button class="btn-outline" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="appAuth.logout();" data-i18n="logoutBtn">🚪 Toka (Logout)</button>
+            <button class="btn-outline" style="width:100%; color:var(--danger); border-color:var(--danger);" onclick="appAuth.logout();">↔️ Switch account / Add account (Log out)</button>
             <button class="btn-outline mt-1" style="width:100%; border:none;" onclick="ui.hideModal('settings-modal')" data-i18n="closeBtn">Funga</button>
         </div>
     </div>

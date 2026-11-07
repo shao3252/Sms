@@ -26,15 +26,46 @@
             <button id="group-settings-btn" class="icon-btn" style="display:none; font-size:1.2rem;" onclick="ui.showModal('group-settings-modal')">⚙️</button>
         </div>
 
+        <div class="chat-tabs">
+            <button id="tab-global-chat" class="chat-tab active" type="button">🌍 Global Chat</button>
+            <button id="tab-my-groups" class="chat-tab" type="button">👥 My Groups</button>
+        </div>
         <input type="file" id="group-pic-upload" accept="image/*" style="display:none" onchange="chatSystem.uploadGroupImage(event)">
 
         <div id="pinned-bar" style="display:none; background:var(--card-bg); padding:10px 15px; border-bottom:1px solid var(--border); font-size:0.85rem; border-left:4px solid var(--primary); cursor:pointer;" onclick="chatSystem.showAllPinned()">
             <strong style="color:var(--primary);">📌 Pinned (<span id="pin-count">0</span>):</strong> Tap to view
         </div>
 
+        <section id="my-groups-panel" class="my-groups-panel" hidden>
+            <div class="groups-toolbar">
+                <div><h3>My Groups</h3><p>Create a group or join a public community.</p></div>
+                <button id="new-chat-group-btn" class="btn-primary" type="button">＋ Create</button>
+            </div>
+            <form id="new-chat-group-form" class="new-chat-group-form card" hidden>
+                <input id="chat-group-name" maxlength="50" minlength="3" placeholder="Group name" required>
+                <textarea id="chat-group-description" maxlength="300" placeholder="What is this group about?"></textarea>
+                <button class="btn-primary" type="submit">Create group</button>
+                <button id="cancel-chat-group" class="btn-outline" type="button">Cancel</button>
+            </form>
+            <div id="chat-groups-list" class="chat-groups-list"><p>Loading groups…</p></div>
+            <div id="chat-group-room" hidden>
+                <div class="chat-group-room-head">
+                    <button id="back-chat-groups" class="btn-outline" type="button">← Groups</button>
+                    <div><b id="chat-group-room-name"></b><small id="chat-group-room-description"></small></div>
+                    <button id="chat-group-invite-btn" class="btn-outline" type="button">Invite</button><button id="chat-group-members-btn" class="btn-outline" type="button">Members</button>
+                </div>
+                <div id="chat-group-members" class="chat-group-members" hidden></div>
+                <div id="chat-group-messages" class="chat-box chat-group-messages"></div>
+                <div id="chat-group-reply-preview" class="reply-preview wa-reply-compose" hidden><strong id="chat-group-reply-name"></strong><div id="chat-group-reply-text"></div><button type="button" onclick="groupChatActions.cancelReply()">✕</button></div>
+                <form id="chat-group-send-form" class="input-row chat-group-send-form">
+                    <input id="chat-group-message" maxlength="2000" placeholder="Write a group message…" autocomplete="off" required>
+                    <button type="submit">➤</button>
+                </form>
+            </div>
+        </section>
         <div id="global-chat-box" class="chat-box"></div>
 
-        <div class="chat-input-area" style="position:sticky; bottom:0; z-index:10;">
+        <div id="chat-input-area" class="chat-input-area" style="position:sticky; bottom:0; z-index:10;">
             <div id="reply-preview" class="reply-preview">
                 <strong id="reply-name" style="color:var(--primary); font-size:0.85rem;"></strong>
                 <div id="reply-text" style="color:var(--text-muted); font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
@@ -52,7 +83,7 @@
             <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">⚙️ Group Settings</h3>
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="document.getElementById('group-pic-upload').click()">📷 Badili Picha ya Group</button>
             <button class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.editGroupName()">✏️ Badili Jina la Group</button>
-            <button id="toggle-lock-btn" class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px; color:var(--danger);" onclick="chatSystem.toggleGroupLock()">🔒 Funga Group (Lock)</button>
+            <button id="toggle-lock-btn" class="btn-outline" style="width:100%; border:none; text-align:left; font-size:1.1rem; padding:15px 10px;" onclick="chatSystem.toggleGroupLock()">Global Chat: Open</button>
             <button class="btn-primary mt-1" onclick="ui.hideModal('group-settings-modal')">Ghairi</button>
         </div>
     </div>
@@ -71,6 +102,8 @@
             <button class="btn-primary mt-1" onclick="ui.hideModal('msg-options-modal')">Ghairi</button>
         </div>
     </div>
+
+    <div id="chat-profile-modal" class="modal"><div class="modal-content card chat-profile-card"><button class="chat-profile-close" onclick="ui.hideModal('chat-profile-modal')">✕</button><img id="chat-profile-photo" class="chat-profile-photo" alt="Profile photo"><h3 id="chat-profile-name">Member</h3><span id="chat-profile-verified"></span> <span id="chat-profile-premium"></span><p id="chat-profile-bio">No bio added yet.</p><small id="chat-profile-uid"></small><button id="chat-profile-open" class="btn-primary">Close profile</button></div></div>
 
     <div id="pinned-modal" class="modal">
         <div class="modal-content card">
