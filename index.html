@@ -47,7 +47,7 @@
                 <input type="password" id="reg-pass" data-i18n-placeholder="passwordPlaceholder" placeholder="Nenosiri" autocomplete="new-password">
                 <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
                 <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
-                <p style="margin-top:12px;">Tayari una akaunti? <span onclick="appAuth.showAuth('login')" class="link">Ingia / Login</span></p>
+                <p style="margin-top:12px;"><span data-i18n="haveAccount">Tayari una akaunti?</span> <span onclick="appAuth.showAuth('login')" class="link" data-i18n="loginLink">Ingia</span></p>
             </div>
 
             <div id="login-form" class="auth-box" style="display:none;">
@@ -56,7 +56,7 @@
                 <input type="password" id="login-pass" data-i18n-placeholder="passwordPlaceholder" placeholder="Nenosiri" autocomplete="current-password">
                 <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
                 <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
-                <p style="margin-top:12px;">Hauna akaunti? <span onclick="appAuth.showAuth('register')" class="link">Jisajili / Create account</span></p>
+                <p style="margin-top:12px;"><span data-i18n="noAccount">Hauna akaunti?</span> <span onclick="appAuth.showAuth('register')" class="link" data-i18n="registerLink">Jisajili</span></p>
             </div>
         </div>
     </div>
