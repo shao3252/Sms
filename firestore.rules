@@ -6,10 +6,18 @@ service cloud.firestore {
       return signedIn() &&
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    function notRestricted() {
+      return signedIn() &&
+        !exists(/databases/$(database)/documents/banned/$(request.auth.uid));
+    }
 
     match /admins/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if false;
+    }
+
+    match /banned/{uid} {
+      allow read, create, update, delete: if isAdmin();
     }
 
     match /profiles/{uid} {
@@ -29,7 +37,7 @@ service cloud.firestore {
       allow read: if signedIn() &&
         (resource.data.status == 'approved' || resource.data.authorId == request.auth.uid || isAdmin());
       allow create: if signedIn() &&
-        request.resource.data.authorId == request.auth.uid &&
+        notRestricted() && request.resource.data.authorId == request.auth.uid &&
         (request.resource.data.status == 'pending' ||
          (isAdmin() && request.resource.data.status == 'approved'));
       allow update: if isAdmin() ||
@@ -46,25 +54,27 @@ service cloud.firestore {
 
     match /comments/{commentId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow create: if notRestricted() && request.resource.data.authorId == request.auth.uid;
       allow update, delete: if isAdmin() || (signedIn() && resource.data.authorId == request.auth.uid);
     }
 
     match /follows/{followId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.followerId == request.auth.uid;
+      allow create: if notRestricted() && request.resource.data.followerId == request.auth.uid;
       allow delete: if signedIn() && resource.data.followerId == request.auth.uid;
     }
 
     match /savedPosts/{savedId} {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
-      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if notRestricted() && request.resource.data.userId == request.auth.uid;
       allow delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /messages/{messageId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow create: if notRestricted() && request.resource.data.uid == request.auth.uid &&
+        (!exists(/databases/$(database)/documents/settings/group) ||
+         get(/databases/$(database)/documents/settings/group).data.locked != true || isAdmin());
       allow update: if isAdmin() ||
         (signedIn() && resource.data.uid == request.auth.uid &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted']));
@@ -72,7 +82,7 @@ service cloud.firestore {
     }
 
     match /premiumRequests/{requestId} {
-      allow create: if signedIn() &&
+      allow create: if notRestricted() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.status == 'pending';
       allow read: if isAdmin() || (signedIn() && resource.data.userId == request.auth.uid);
