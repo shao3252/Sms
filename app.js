@@ -27,7 +27,23 @@ function applyLanguage(lang){
 }
 
 window.currentUser=null;window.viewingUserId=null;
-const toast=s=>{const e=$("toast-container");if(e)e.textContent=s;};
+let toastTimer=null;
+const toast=(message,type)=>{
+ const host=$("toast-container");
+ if(!host)return;
+ const text=String(message??"").trim();
+ if(!text)return;
+ const inferred=type||(/could not|failed|error|denied|restricted|invalid|must be|choose |under [0-9]|only|check firestore|permission/i.test(text)?"error":(/saved|created|published|approved|rejected|updated|deleted|submitted|following|unblocked|blocked|enabled|disabled|restored/i.test(text)?"success":"info"));
+ host.replaceChildren();
+ const item=document.createElement("div");
+ item.className="toast "+inferred;
+ item.setAttribute("role",inferred==="error"?"alert":"status");
+ item.textContent=text;
+ host.appendChild(item);
+ host.classList.add("visible");
+ clearTimeout(toastTimer);
+ toastTimer=setTimeout(()=>{host.classList.remove("visible");item.classList.add("toast-out");setTimeout(()=>{if(item.parentNode===host)host.replaceChildren();},220);},inferred==="error"?4800:2600);
+};
 const ref=(c,id)=>F.doc(F.db,c,id), profile=uid=>ref("profiles",uid);
 const getProfile=async uid=>{const s=await F.getDoc(profile(uid));return s.exists()?s.data():{username:"Member",bio:""};};
 const adminCheck=async uid=>(await F.getDoc(ref("admins",uid))).exists();
@@ -69,7 +85,7 @@ window.appFeatures={
 window.appAdmin={
  guard(){if(!S.admin||!S.user)throw new Error("Admin access only. Check that your UID has a document in the admins collection.");},
  area(){const el=$("admin-content-area");if(!el)throw new Error("Admin content area is missing from index.html.");return el;},
- async load(label,work){try{this.guard();this.area().innerHTML='<p style="text-align:center;padding:20px;">Loading '+esc(label)+'…</p>';await work();}catch(e){console.error("Admin "+label+" failed:",e);const msg=e?.code==="permission-denied"?"Firestore denied this action. Check the published rules and your admin UID.":(e?.message||"Please try again.");this.area().innerHTML='<div role="alert" style="padding:16px;color:var(--danger);"><b>Could not load '+esc(label)+'</b><p>'+esc(msg)+'</p><button class="btn-outline" onclick="appAdmin.renderOverview()">Back to dashboard</button></div>';toast("Admin error: "+msg);}},
+ async load(label,work){try{this.guard();this.area().innerHTML='<p style="text-align:center;padding:20px;">Loading '+esc(label)+'…</p>';await work();}catch(e){console.error("Admin "+label+" failed:",e);const msg=e?.code==="permission-denied"?"Firestore denied this action. Check the published rules and your admin UID.":(e?.message||"Please try again.");this.area().innerHTML='<div role="alert" style="padding:16px;color:var(--danger);"><b>Could not load '+esc(label)+'</b><p>'+esc(msg)+'</p><button class="btn-outline" onclick="appAdmin.renderOverview()">Back to dashboard</button></div>';}},
  async renderOverview(){await this.load("dashboard",async()=>{const [pending,users,vip,reports,appeals]=await Promise.all([
   F.getDocs(F.query(F.collection(F.db,"posts"),F.where("status","==","pending"),F.limit(100))),
   F.getDocs(F.query(F.collection(F.db,"profiles"),F.limit(100))),
