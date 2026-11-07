@@ -147,11 +147,16 @@ async function showMembers(){
     const snap=await F.getDocs(F.query(F.collection(F.db,"groups",activeGroup.id,"members"),F.limit(100)));
     const host=$("group-members-list");
     host.innerHTML=snap.docs.map(d=>{
-      const m=d.data(),canManage=websiteAdmin||(activeMember&&activeMember.role==="owner");
-      const controls=canManage&&m.uid!==user.uid&&m.role!=="owner"?`<button class="btn-outline" onclick="groupsApp.removeMember('${activeGroup.id}','${m.uid}')">Remove</button>`:"";
+      const m=d.data(),canManage=websiteAdmin||(activeMember&&["owner","admin"].includes(activeMember.role));
+      const controls=canManage&&m.uid!==user.uid&&m.role!=="owner"?`<button class="btn-outline" onclick="groupsApp.setMemberRole('${activeGroup.id}','${m.uid}','${m.role==="admin"?"member":"admin"}')">${m.role==="admin"?"Demote":"Make admin"}</button> <button class="btn-outline" onclick="groupsApp.removeMember('${activeGroup.id}','${m.uid}')">Remove</button>`:"";
       return `<div class="group-member-row"><span>${esc(m.username||"Member")} <small>${esc(m.role||"member")}</small></span>${controls}</div>`;
     }).join("")||"No members.";
   }catch(e){toast(errorText(e),"error");}
+}
+async function setMemberRole(groupId,uid,role){
+  if(!["admin","member"].includes(role))return;
+  try{await F.updateDoc(memberRef(groupId,uid),{role});toast(role==="admin"?"Group admin added.":"Group admin removed.","success");await showMembers();}
+  catch(e){toast(errorText(e),"error");}
 }
 async function removeMember(groupId,uid){
   try{
@@ -170,7 +175,7 @@ async function deleteGroup(id){
   try{await F.updateDoc(groupRef(id),{status:"removed",updatedAt:F.serverTimestamp()});toast("Group removed.","success");showHome();await loadGroups();}
   catch(e){toast(errorText(e),"error");}
 }
-window.groupsApp={openGroup,joinGroup,deleteMessage,showMembers,removeMember,toggleStatus,deleteGroup};
+window.groupsApp={openGroup,joinGroup,deleteMessage,showMembers,removeMember,setMemberRole,toggleStatus,deleteGroup};
 $("create-group-form").addEventListener("submit",createGroup);
 $("group-message-form").addEventListener("submit",sendMessage);
 $("back-to-groups").addEventListener("click",()=>{showHome();loadGroups();});
