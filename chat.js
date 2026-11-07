@@ -52,6 +52,11 @@ async function loadChatGroups(){
    adminGroups=adminSnap.docs.map(d=>({id:d.id,...d.data()})).filter(g=>g.status!=="active").map(g=>`<article class="chat-group-card"><div class="chat-group-avatar">🛡️</div><div class="chat-group-info"><b>${esc(g.name)}</b><small>${esc(g.status||"")}</small></div><button class="btn-outline" onclick="groupChatActions.restore('${g.id}')">Restore</button></article>`).join("");
   }
   $("chat-groups-list").innerHTML='<h4>Joined groups</h4>'+(joined.map(g=>card(g,true)).join("")||'<p class="groups-empty">You have not joined any groups yet.</p>')+'<h4>Discover groups</h4>'+(discover.map(g=>card(g,false)).join("")||'<p class="groups-empty">No public groups available.</p>')+(groupChatAdmin?'<h4>Website admin · Removed groups</h4>'+adminGroups:'');
+  if(groupChatAdmin){
+   const adminSnap=await F.getDocs(F.query(F.collection(F.db,"groups"),F.limit(100)));
+   const adminCards=adminSnap.docs.map(d=>{const g={id:d.id,...d.data()};return `<article class="chat-group-card"><div class="chat-group-avatar">🛡️</div><div class="chat-group-info"><b>${esc(g.name)}</b><small>Status: ${esc(g.status||"unknown")}</small></div>${g.status==="active"?`<button class="btn-outline" onclick="groupChatActions.moderate('${g.id}','suspended')">Suspend</button>`:`<button class="btn-outline" onclick="groupChatActions.restore('${g.id}')">Restore</button>`}<button class="btn-outline" onclick="groupChatActions.moderate('${g.id}','removed')">Remove</button></article>`;}).join("");
+   $("chat-groups-list").innerHTML+='<h4>Website admin · Manage all groups</h4>'+(adminCards||'<p class="groups-empty">No groups yet.</p>');
+  }
  }catch(e){console.error("Chat groups load failed:",e);$("chat-groups-list").textContent=e?.code==="permission-denied"?"Groups are unavailable. Publish the latest Firestore rules.":"Could not load groups. Check your connection.";}
 }
 async function createChatGroup(event){
