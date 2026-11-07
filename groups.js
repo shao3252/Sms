@@ -113,7 +113,7 @@ async function openGroup(id){
     $("leave-group").hidden=!memberSnap.exists()||activeMember.role==="owner";
     const tools=$("group-room-admin-tools");
     tools.hidden=!(websiteAdmin||["owner","admin"].includes(activeMember.role));
-    tools.innerHTML=tools.hidden?"":`<strong>Group controls</strong><p class="groups-muted">Manage this group's membership and messages.</p><button class="btn-outline" onclick="groupsApp.showMembers()">View members</button> ${websiteAdmin?'<button class="btn-outline" onclick="groupsApp.deleteGroup(\''+id+'\')">Delete group</button>':''}<div id="group-members-list"></div>`;
+    tools.innerHTML=tools.hidden?"":`<strong>Group controls</strong><p class="groups-muted">Manage this group's membership and messages.</p><button class="btn-outline" onclick="groupsApp.showMembers()">View members</button> ${(websiteAdmin||activeMember.role==="owner")?'<button class="btn-outline" onclick="groupsApp.deleteGroup(\''+id+'\')">Remove group</button>':''}<div id="group-members-list"></div>`;
     if(stopMessages)stopMessages();
     const q=F.query(F.collection(F.db,"groups",id,"messages"),F.orderBy("createdAt","asc"),F.limit(100));
     stopMessages=F.onSnapshot(q,result=>{
@@ -170,10 +170,14 @@ async function toggleStatus(id,status){
   catch(e){toast(errorText(e),"error");}
 }
 async function deleteGroup(id){
-  if(!websiteAdmin)return;
-  if(!confirm("Remove this group from SMS TAMU? Members will no longer be able to open it."))return;
-  try{await F.updateDoc(groupRef(id),{status:"removed",updatedAt:F.serverTimestamp()});toast("Group removed.","success");showHome();await loadGroups();}
-  catch(e){toast(errorText(e),"error");}
+  try{
+    const snap=await F.getDoc(groupRef(id));
+    if(!snap.exists())throw new Error("Group not found.");
+    if(!websiteAdmin&&snap.data().ownerId!==user.uid)throw new Error("Only the group owner or website admin can remove this group.");
+    if(!confirm("Remove this group from SMS TAMU? Members will no longer be able to open it."))return;
+    await F.updateDoc(groupRef(id),{status:"removed",updatedAt:F.serverTimestamp()});
+    toast("Group removed.","success");showHome();await loadGroups();
+  }catch(e){toast(errorText(e),"error");}
 }
 window.groupsApp={openGroup,joinGroup,deleteMessage,showMembers,removeMember,setMemberRole,toggleStatus,deleteGroup};
 $("create-group-form").addEventListener("submit",createGroup);
