@@ -36,7 +36,7 @@ function showHome(){
 }
 function groupCard(group,joined=false,adminMode=false){
   const action=adminMode
-    ? `<button class="btn-outline" onclick="groupsApp.toggleStatus('${group.id}','${group.status==='active'?'suspended':'active'}')">${group.status==='active'?'Suspend':'Restore'}</button> <button class="btn-outline" onclick="groupsApp.deleteGroup('${group.id}')">Delete</button>`
+    ? `<button class="btn-outline" onclick="groupsApp.toggleStatus('${group.id}','${group.status==='active'?'suspended':'active'}')">${group.status==='active'?'Suspend':'Restore'}</button> <button class="btn-outline" onclick="groupsApp.deleteGroup('${group.id}')">Remove</button>`
     : joined
       ? `<button class="btn-primary" onclick="groupsApp.openGroup('${group.id}')">Open</button>`
       : `<button class="btn-primary" onclick="groupsApp.joinGroup('${group.id}')">Join</button>`;
@@ -120,7 +120,7 @@ async function openGroup(id){
       const box=$("group-messages");
       box.innerHTML=result.docs.map(d=>{
         const m=d.data();
-        return `<article class="group-message ${m.authorId===user.uid?'mine':''}"><b>${esc(m.username||"Member")}</b><p>${esc(m.text)}</p><small>${m.createdAt?.toDate?m.createdAt.toDate().toLocaleString():""}</small>${m.deleted?'<em>Message removed</em>':""}${(websiteAdmin||m.authorId===user.uid||["owner","admin"].includes(activeMember.role))?`<button class="group-message-delete" onclick="groupsApp.deleteMessage('${id}','${d.id}')">Delete</button>`:""}</article>`;
+        return `<article class="group-message ${m.authorId===user.uid?'mine':''}"><b>${esc(m.username||"Member")}</b><p>${m.deleted?"This message was removed.":esc(m.text)}</p><small>${m.createdAt?.toDate?m.createdAt.toDate().toLocaleString():""}</small>${m.deleted?'<em>Message removed</em>':""}${(websiteAdmin||m.authorId===user.uid||["owner","admin"].includes(activeMember.role))?`<button class="group-message-delete" onclick="groupsApp.deleteMessage('${id}','${d.id}')">Delete</button>`:""}</article>`;
       }).join("")||'<p class="groups-muted">No messages yet. Say hello!</p>';
       box.scrollTop=box.scrollHeight;
     },e=>{$("group-messages").innerHTML='<p class="groups-error">'+esc(errorText(e))+'</p>';});
