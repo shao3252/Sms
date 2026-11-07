@@ -40,8 +40,8 @@ function switchChatTab(which){
 }
 async function loadChatGroups(){
  try{
-  const snap=await F.getDocs(F.query(F.collection(F.db,"groups"),F.where("visibility","==","public"),F.where("status","==","active"),F.limit(100)));
-  const all=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const snap=await F.getDocs(F.query(F.collection(F.db,"groups"),F.where("visibility","==","public"),F.limit(100)));
+  const all=snap.docs.map(d=>({id:d.id,...d.data()})).filter(g=>g.status==="active");
   const memberSnaps=await Promise.all(all.map(g=>F.getDoc(groupMemberDoc(g.id,user.uid))));
   const joined=all.filter((g,i)=>memberSnaps[i].exists());
   const discover=all.filter((g,i)=>!memberSnaps[i].exists());
@@ -111,6 +111,11 @@ async function removeChatGroupMessage(id,messageId){
  try{await F.updateDoc(F.doc(F.db,"groups",id,"messages",messageId),{deleted:true});toast("Message removed.","success");}
  catch(e){toast("Could not remove message.","error");}
 }
+async function moderateChatGroup(id,status){
+ if(!groupChatAdmin||!["suspended","removed"].includes(status))return;
+ try{await F.updateDoc(groupDoc(id),{status,updatedAt:F.serverTimestamp()});toast(status==="removed"?"Group removed.":"Group suspended.","success");await loadChatGroups();if(activeGroupChat?.id===id)closeGroupChat();}
+ catch(e){toast("Could not update group status.","error");}
+}
 async function restoreChatGroup(id){
  if(!groupChatAdmin)return;
  try{await F.updateDoc(groupDoc(id),{status:"active",updatedAt:F.serverTimestamp()});toast("Group restored.","success");await loadChatGroups();}
@@ -122,7 +127,7 @@ function closeGroupChat(){
  if($("chat-groups-list"))$("chat-groups-list").hidden=false;
  if($("chat-group-room"))$("chat-group-room").hidden=true;
 }
-window.groupChatActions={open:openChatGroup,join:joinChatGroup,removeMember:removeChatGroupMember,removeMessage:removeChatGroupMessage,restore:restoreChatGroup};
+window.groupChatActions={open:openChatGroup,join:joinChatGroup,removeMember:removeChatGroupMember,removeMessage:removeChatGroupMessage,restore:restoreChatGroup,moderate:moderateChatGroup};
 $("tab-global-chat").addEventListener("click",()=>switchChatTab("global"));
 $("tab-my-groups").addEventListener("click",()=>switchChatTab("groups"));
 $("new-chat-group-btn").addEventListener("click",()=>$("new-chat-group-form").hidden=false);
