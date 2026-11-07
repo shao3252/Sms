@@ -30,7 +30,8 @@ service cloud.firestore {
         (resource.data.status == 'approved' || resource.data.authorId == request.auth.uid || isAdmin());
       allow create: if signedIn() &&
         request.resource.data.authorId == request.auth.uid &&
-        request.resource.data.status == 'pending';
+        (request.resource.data.status == 'pending' ||
+         (isAdmin() && request.resource.data.status == 'approved'));
       allow update: if isAdmin() ||
         (signedIn() && resource.data.authorId == request.auth.uid &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])) ||
