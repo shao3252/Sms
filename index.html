@@ -26,18 +26,18 @@
             
             <div id="landing-screen" class="auth-box" style="display:block; text-align:center; padding:30px 22px; background:linear-gradient(145deg, rgba(255,105,180,.16), rgba(100,149,237,.13)); border:1px solid rgba(255,105,180,.35);">
                 <div style="font-size:3.4rem; margin:8px 0 14px;">💌</div>
-                <p style="letter-spacing:3px; font-size:.75rem; font-weight:800; color:var(--primary); margin-bottom:10px;">WELCOME TO</p>
+                <p data-i18n="landingEyebrow" style="letter-spacing:3px; font-size:.75rem; font-weight:800; color:var(--primary); margin-bottom:10px;">KARIBU</p>
                 <h2 style="font-size:2rem; margin-bottom:12px;">UTAMU WA PENZI NENO</h2>
-                <p style="line-height:1.7; color:var(--text-muted); margin:0 auto 24px; max-width:320px;">Discover, share and enjoy beautiful love messages. Find the right words for every feeling.</p>
-                <button onclick="appAuth.showAuth('choice')" class="btn-primary" style="width:100%; padding:15px; font-size:1rem;">Get Started&nbsp; →</button>
-                <p style="font-size:.8rem; color:var(--text-muted); margin-top:18px;">A place for words that touch the heart 💖</p>
+                <p data-i18n="landingDescription" style="line-height:1.7; color:var(--text-muted); margin:0 auto 24px; max-width:320px;">Gundua, shiriki na furahia meseji nzuri za mapenzi. Pata maneno sahihi kwa kila hisia.</p>
+                <button onclick="appAuth.showAuth('choice')" class="btn-primary" style="width:100%; padding:15px; font-size:1rem;"><span data-i18n="landingStart">Anza Sasa</span>&nbsp; →</button>
+                <p data-i18n="landingTagline" style="font-size:.8rem; color:var(--text-muted); margin-top:18px;">Mahali pa maneno yanayogusa moyo 💖</p>
             </div>
 
             <div id="auth-choice" class="auth-box" style="display:none;">
-                <h2>Karibu SMS TAMU 💖</h2>
-                <p style="margin:12px 0 20px; color:var(--text-muted);">Chagua unachotaka kufanya / Choose an option</p>
-                <button onclick="appAuth.showAuth('login')" class="btn-primary" style="width:100%; margin-bottom:12px;">Ingia / Login</button>
-                <button onclick="appAuth.showAuth('register')" class="btn-outline" style="width:100%;">Jisajili / Create account</button>
+                <h2 data-i18n="authChoiceTitle">Karibu SMS TAMU 💖</h2>
+                <p data-i18n="authChoiceDescription" style="margin:12px 0 20px; color:var(--text-muted);">Chagua unachotaka kufanya</p>
+                <button onclick="appAuth.showAuth('login')" class="btn-primary" style="width:100%; margin-bottom:12px;" data-i18n="authLoginChoice">Ingia</button>
+                <button onclick="appAuth.showAuth('register')" class="btn-outline" style="width:100%;" data-i18n="authRegisterChoice">Jisajili</button>
             </div>
 
             <div id="register-form" class="auth-box" style="display:none;">
@@ -46,7 +46,7 @@
                 <input type="email" id="reg-email" placeholder="Email" autocomplete="email">
                 <input type="password" id="reg-pass" placeholder="Password" autocomplete="new-password">
                 <button onclick="appAuth.register()" class="btn-primary" data-i18n="regBtn">Jisajili</button>
-                <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;">← Back</button>
+                <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
                 <p style="margin-top:12px;">Tayari una akaunti? <span onclick="appAuth.showAuth('login')" class="link">Ingia / Login</span></p>
             </div>
 
@@ -55,7 +55,7 @@
                 <input type="email" id="login-email" placeholder="Email" autocomplete="email">
                 <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
                 <button onclick="appAuth.login()" class="btn-primary" data-i18n="loginBtn">Ingia</button>
-                <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;">← Back</button>
+                <button onclick="appAuth.showAuth('choice')" class="btn-outline" style="width:100%; margin-top:12px;" data-i18n="backBtn">← Rudi</button>
                 <p style="margin-top:12px;">Hauna akaunti? <span onclick="appAuth.showAuth('register')" class="link">Jisajili / Create account</span></p>
             </div>
         </div>
