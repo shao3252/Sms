@@ -24,7 +24,16 @@
             <h1 class="logo-text">Sms Tamu 💖</h1>
             <p class="subtitle" data-i18n="welcomeSub">Shiriki meseji tamu za mapenzi</p>
             
-            <div id="auth-choice" class="auth-box">
+            <div id="landing-screen" class="auth-box" style="display:block; text-align:center; padding:30px 22px; background:linear-gradient(145deg, rgba(255,105,180,.16), rgba(100,149,237,.13)); border:1px solid rgba(255,105,180,.35);">
+                <div style="font-size:3.4rem; margin:8px 0 14px;">💌</div>
+                <p style="letter-spacing:3px; font-size:.75rem; font-weight:800; color:var(--primary); margin-bottom:10px;">WELCOME TO</p>
+                <h2 style="font-size:2rem; margin-bottom:12px;">UTAMU WA PENZI NENO</h2>
+                <p style="line-height:1.7; color:var(--text-muted); margin:0 auto 24px; max-width:320px;">Discover, share and enjoy beautiful love messages. Find the right words for every feeling.</p>
+                <button onclick="appAuth.showAuth('choice')" class="btn-primary" style="width:100%; padding:15px; font-size:1rem;">Get Started&nbsp; →</button>
+                <p style="font-size:.8rem; color:var(--text-muted); margin-top:18px;">A place for words that touch the heart 💖</p>
+            </div>
+
+            <div id="auth-choice" class="auth-box" style="display:none;">
                 <h2>Karibu SMS TAMU 💖</h2>
                 <p style="margin:12px 0 20px; color:var(--text-muted);">Chagua unachotaka kufanya / Choose an option</p>
                 <button onclick="appAuth.showAuth('login')" class="btn-primary" style="width:100%; margin-bottom:12px;">Ingia / Login</button>
