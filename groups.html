@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMS TAMU - Groups</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="groups-page">
+    <header class="groups-header">
+      <button class="btn-outline" onclick="location.href='index.html'">← Back</button>
+      <div><h1 class="logo-text-small">SMS TAMU 💖</h1><p class="groups-subtitle" data-en="Community groups" data-sw="Makundi ya jamii">Community groups</p></div>
+      <span id="groups-admin-label" class="groups-admin-label" hidden>WEB ADMIN</span>
+    </header>
+
+    <main class="groups-main">
+      <section id="groups-home">
+        <div class="groups-intro card">
+          <h2 data-en="Find your people" data-sw="Jiunge na watu wako">Find your people</h2>
+          <p data-en="Create a group, join a community and chat together." data-sw="Tengeneza kundi, jiunge na jamii na mzungumze pamoja.">Create a group, join a community and chat together.</p>
+        </div>
+
+        <form id="create-group-form" class="card groups-create-form">
+          <h3 data-en="Create a group" data-sw="Tengeneza kundi">Create a group</h3>
+          <input id="new-group-name" maxlength="50" minlength="3" placeholder="Group name" required>
+          <textarea id="new-group-description" maxlength="300" placeholder="What is this group about? (optional)"></textarea>
+          <button class="btn-primary" type="submit" data-en="Create group" data-sw="Tengeneza kundi">Create group</button>
+        </form>
+
+        <div class="groups-section-head">
+          <h3 data-en="My groups" data-sw="Makundi yangu">My groups</h3>
+          <button class="btn-outline" id="refresh-groups">↻</button>
+        </div>
+        <div id="my-groups-list"><p class="groups-muted">Loading your groups…</p></div>
+
+        <div class="groups-section-head"><h3 data-en="Discover groups" data-sw="Gundua makundi">Discover groups</h3></div>
+        <div id="discover-groups-list"><p class="groups-muted">Loading groups…</p></div>
+
+        <section id="groups-admin-panel" hidden>
+          <div class="groups-section-head"><h3>🛡️ Website administration</h3></div>
+          <p class="groups-muted">As website administrator, you can review and manage every group.</p>
+          <div id="all-groups-list"></div>
+        </section>
+      </section>
+
+      <section id="group-room" hidden>
+        <div class="group-room-header card">
+          <button id="back-to-groups" class="btn-outline">← Groups</button>
+          <div class="group-room-title"><h2 id="room-name">Group</h2><p id="room-description" class="groups-muted"></p></div>
+          <button id="leave-group" class="btn-outline">Leave</button>
+        </div>
+        <div id="group-room-admin-tools" class="card" hidden></div>
+        <div id="group-messages" class="group-messages"><p class="groups-muted">Loading messages…</p></div>
+        <form id="group-message-form" class="group-message-form">
+          <input id="group-message-input" maxlength="2000" placeholder="Write a message…" autocomplete="off" required>
+          <button class="btn-primary" type="submit">➤</button>
+        </form>
+      </section>
+    </main>
+  </div>
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="groups.js"></script>
+  <script>if(localStorage.getItem('st_theme')==='dark')document.body.classList.add('dark');</script>
+</body>
+</html>
