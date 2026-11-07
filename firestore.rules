@@ -181,11 +181,12 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isAdmin() || isGroupMember(groupId);
         allow create: if notRestricted() && isGroupMember(groupId) &&
-          request.resource.data.keys().hasOnly(['authorId', 'username', 'text', 'createdAt', 'deleted']) &&
+          request.resource.data.keys().hasOnly(['authorId', 'username', 'text', 'replyTo', 'createdAt', 'deleted']) &&
           request.resource.data.authorId == request.auth.uid &&
           request.resource.data.text is string &&
           request.resource.data.text.size() > 0 &&
           request.resource.data.text.size() <= 2000 &&
+          (!('replyTo' in request.resource.data) || request.resource.data.replyTo is map) &&
           request.resource.data.deleted == false;
         allow update: if isGroupAdmin(groupId) ||
           (signedIn() && resource.data.authorId == request.auth.uid &&
