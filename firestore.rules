@@ -10,6 +10,10 @@ service cloud.firestore {
       return signedIn() &&
         !exists(/databases/$(database)/documents/banned/$(request.auth.uid));
     }
+    function autoApproveEnabled() {
+      return exists(/databases/$(database)/documents/settings/moderation) &&
+        get(/databases/$(database)/documents/settings/moderation).data.autoApprove == true;
+    }
 
     match /admins/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
@@ -40,7 +44,7 @@ service cloud.firestore {
       allow create: if signedIn() &&
         notRestricted() && request.resource.data.authorId == request.auth.uid &&
         (request.resource.data.status == 'pending' ||
-         (isAdmin() && request.resource.data.status == 'approved'));
+         (request.resource.data.status == 'approved' && (isAdmin() || autoApproveEnabled())));
       allow update: if isAdmin() ||
         (signedIn() && resource.data.authorId == request.auth.uid &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text'])) ||
