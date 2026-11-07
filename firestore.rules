@@ -85,9 +85,7 @@ service cloud.firestore {
 
     match /messages/{messageId} {
       allow read: if signedIn();
-      allow create: if notRestricted() && request.resource.data.uid == request.auth.uid &&
-        (!exists(/databases/$(database)/documents/settings/group) ||
-         get(/databases/$(database)/documents/settings/group).data.locked != true || isAdmin());
+      allow create: if notRestricted() && request.resource.data.uid == request.auth.uid;
       allow update: if isAdmin() ||
         (signedIn() && resource.data.uid == request.auth.uid &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deleted']));
